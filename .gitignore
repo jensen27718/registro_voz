@@ -1,0 +1,19 @@
+# .gitignore
+
+# Ignorar el entorno virtual
+venv/
+
+# Ignorar la base de datos local
+db.sqlite3
+*.sqlite3
+
+# Ignorar archivos de secretos
+.env
+credentials.json
+
+# Ignorar directorios de Python
+__pycache__/
+*.pyc
+
+# Ignorar archivos de staticfiles recolectados
+/static/
