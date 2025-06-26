@@ -17,3 +17,6 @@ __pycache__/
 
 # Ignorar archivos de staticfiles recolectados
 /static/
+# .gitignore
+# ... otras líneas ...
+registro_voz/secrets.py

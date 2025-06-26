@@ -20,9 +20,22 @@ SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
+# interfaz/views.py - CÓDIGO UNIFICADO
+try:
+    # Intenta importar el archivo de secretos del proyecto principal
+    from registro_voz import secrets
+except ImportError:
+    secrets = None
+
+if hasattr(secrets, 'GEMINI_API_KEY'):
+    GEMINI_API_KEY = secrets.GEMINI_API_KEY
+else:
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+
 
 CREDS_FILE = os.path.join(settings.BASE_DIR, 'credentials.json')
 creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
