@@ -224,16 +224,38 @@ def dashboard(request):
     inicio_mes = hoy.replace(day=1)
     inicio_anio = hoy.replace(month=1, day=1)
 
-    totales_semana = _totales_desde(Registro.objects.filter(fecha__range=[inicio_semana, inicio_semana + timedelta(days=6)]))
+    totales_semana = _totales_desde(
+        Registro.objects.filter(
+            fecha__range=[inicio_semana, inicio_semana + timedelta(days=6)]
+        )
+    )
     totales_mes = _totales_desde(Registro.objects.filter(fecha__gte=inicio_mes))
     totales_anio = _totales_desde(Registro.objects.filter(fecha__gte=inicio_anio))
     recientes = Registro.objects.order_by('-fecha', '-id')[:10]
+
+    cuentas_data = []
+    for cuenta in Cuenta.objects.all():
+        qs_cuenta = Registro.objects.filter(cuenta=cuenta)
+        cuentas_data.append(
+            {
+                'cuenta': cuenta,
+                'saldo_actual': _totales_desde(qs_cuenta)['saldo'],
+                'totales_semana': _totales_desde(
+                    qs_cuenta.filter(
+                        fecha__range=[inicio_semana, inicio_semana + timedelta(days=6)]
+                    )
+                ),
+                'totales_mes': _totales_desde(qs_cuenta.filter(fecha__gte=inicio_mes)),
+                'totales_anio': _totales_desde(qs_cuenta.filter(fecha__gte=inicio_anio)),
+            }
+        )
 
     context = {
         'totales_semana': totales_semana,
         'totales_mes': totales_mes,
         'totales_anio': totales_anio,
         'registros_recientes': recientes,
+        'cuentas_data': cuentas_data,
     }
     return render(request, 'interfaz/dashboard.html', context)
 
