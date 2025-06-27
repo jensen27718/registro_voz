@@ -34,6 +34,7 @@
                         {% with request.resolver_match.app_name as app_name %}
                         <a href="{% url 'gestor_tareas:lista_tareas' %}" class="px-3 py-2 rounded-md text-sm font-medium {% if app_name == 'gestor_tareas' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Tareas</a>
                         <a href="{% url 'interfaz:home' %}" class="px-3 py-2 rounded-md text-sm font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Contabilidad</a>
+                        <a href="{% url 'interfaz:dashboard' %}" class="px-3 py-2 rounded-md text-sm font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Dashboard</a>
                         {% endwith %}
                     </div>
                 </div>
@@ -52,6 +53,7 @@
                 {% with request.resolver_match.app_name as app_name %}
                 <a href="{% url 'gestor_tareas:lista_tareas' %}" class="block px-3 py-2 rounded-md text-base font-medium {% if app_name == 'gestor_tareas' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Tareas</a>
                 <a href="{% url 'interfaz:home' %}" class="block px-3 py-2 rounded-md text-base font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Contabilidad</a>
+                <a href="{% url 'interfaz:dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Dashboard</a>
                 {% endwith %}
             </div>
         </div>
