@@ -55,7 +55,7 @@
 
     // --- Variables de estado para la grabación ---
     let isRecording = false;
-    let finalTranscript = ''; // Almacena el texto completo de la grabación
+    let finalTranscript = '';
 
     // --- Configuración de la API de Voz ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -65,19 +65,15 @@
     } else {
       const recognition = new SpeechRecognition();
       recognition.lang = 'es-ES';
-      
-      // ===== CONFIGURACIÓN PARA ESCUCHA CONTINUA =====
       recognition.continuous = true;
       recognition.interimResults = true;
-      // ===============================================
 
       recognition.onstart = () => {
         isRecording = true;
-        finalTranscript = ''; // Limpia la transcripción anterior
+        finalTranscript = '';
         talkButton.classList.add('pulse', 'bg-red-600');
         talkButton.classList.remove('bg-cyan-600');
         instructionText.textContent = 'Escuchando... presiona para parar.';
-        statusBox.textContent = '';
         transcriptionBox.innerHTML = '';
       };
 
@@ -86,38 +82,33 @@
         talkButton.classList.remove('pulse', 'bg-red-600');
         talkButton.classList.add('bg-cyan-600');
         instructionText.textContent = 'Presiona para dictar una nueva tarea.';
-        // Solo analiza si hay texto y no se ha mostrado ya el formulario
         if (finalTranscript.trim() && formContainer.classList.contains('hidden')) {
           analizarTexto(finalTranscript);
         }
       };
 
-      // Esta función se llama continuamente mientras hablas
       recognition.onresult = (event) => {
         let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        finalTranscript = ''; // <-- LA CLAVE PARA EVITAR REPETICIONES EN MÓVIL
+        for (let i = 0; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript + ' ';
           } else {
             interimTranscript += event.results[i][0].transcript;
           }
         }
-        // Muestra el feedback visual de lo que se está escuchando
         transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
       };
 
       recognition.onerror = (event) => {
         console.error('SpeechRecognition error:', event.error);
-        statusBox.textContent = `Error de micrófono: ${event.error}. Asegúrate de dar permisos.`;
+        statusBox.textContent = `Error de micrófono: ${event.error}.`;
       };
 
-      // --- Lógica del Botón de Micrófono ---
       talkButton.addEventListener('click', () => {
         if (isRecording) {
-          // Si está grabando, la detenemos. onend() se encargará de analizar el texto.
           recognition.stop();
         } else {
-          // Si no está grabando, reseteamos todo y empezamos.
           resetState();
           try {
             recognition.start();
@@ -129,18 +120,15 @@
       });
     }
 
-    // --- Funciones de Interacción con el Backend ---
-    
-    // ===== URLs CORRECTAS USANDO DJANGO =====
+    // --- URLs de Django ---
     const ANALIZAR_TAREA_URL = "{% url 'gestor_tareas:analizar_tarea' %}";
     const REGISTRAR_TAREA_URL = "{% url 'gestor_tareas:registrar_tarea' %}";
     const CREAR_TIPO_URL = "{% url 'gestor_tareas:crear_tipo' %}";
-    // ==========================================
 
+    // --- Funciones de Interacción con el Backend ---
     async function analizarTexto(texto) {
       statusBox.textContent = 'Analizando con IA...';
       talkButton.disabled = true;
-
       try {
         const response = await fetch(ANALIZAR_TAREA_URL, {
           method: 'POST',
@@ -159,24 +147,19 @@
     function populateAndShowForm(data) {
         const { datos_extraidos, todos_los_tipos, todas_las_prioridades, todos_los_estados } = data;
         statusBox.textContent = '';
-        
         if (tomSelectTipo) tomSelectTipo.destroy();
-
         document.getElementById('input-cliente').value = datos_extraidos.cliente || '';
         document.getElementById('input-telefono').value = datos_extraidos.telefono || '';
         document.getElementById('input-descripcion').value = datos_extraidos.descripcion || '';
         document.getElementById('input-fecha_recibido').value = new Date().toISOString().split('T')[0];
-
         populateSelect('select-prioridad', todas_las_prioridades, datos_extraidos.prioridad);
         populateSelect('select-estado', todos_los_estados, 'Recibido');
-
         tomSelectTipo = new TomSelect('#select-tipo', {
             options: todos_los_tipos.map(t => ({ value: t, text: t })),
             create: false,
             searchField: 'text'
         });
         tomSelectTipo.addItem(datos_extraidos.tipo, true);
-
         instructionText.textContent = 'Verifica y corrige la información.';
         talkButton.classList.add('hidden');
         formContainer.classList.remove('hidden');
@@ -197,7 +180,6 @@
     async function crearNuevoItem(tipo) {
         const nombre = window.prompt(`Introduce el nombre para el nuevo ${tipo} de trabajo:`);
         if (!nombre || !nombre.trim()) return;
-
         statusBox.textContent = `Creando nuevo tipo...`;
         try {
             const response = await fetch(CREAR_TIPO_URL, {
@@ -207,7 +189,6 @@
             });
             const result = await response.json();
             if (result.status !== 'success') throw new Error(result.message || 'Error desconocido');
-            
             statusBox.textContent = `¡'${result.nuevo_valor}' creado!`;
             tomSelectTipo.clearOptions();
             result.nuevas_opciones.forEach(o => tomSelectTipo.addOption({ value: o, text: o }));
@@ -228,7 +209,6 @@
             estado: document.getElementById('select-estado').value,
             tipo: tomSelectTipo.getValue()
         };
-
         try {
             const response = await fetch(REGISTRAR_TAREA_URL, {
                 method: 'POST',
