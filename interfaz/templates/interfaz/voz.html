@@ -18,11 +18,8 @@
             <button id="talkButton" class="mx-auto flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-green-600 hover:bg-green-700 transition-all focus:outline-none focus:ring-4 focus:ring-green-500">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-10 h-10"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" /><path fill-rule="evenodd" d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-4a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z" clip-rule="evenodd"/></svg>
             </button>
-            
-            <!-- El formulario se inyectará aquí con JavaScript -->
             <form id="formContainer" class="hidden mt-8 space-y-4 text-sm"></form>
         </section>
-
         <div id="statusBox" class="min-h-[1.75rem] text-center text-sm font-medium text-slate-400"></div>
         <div id="transcriptionBox" class="bg-slate-800/40 rounded-lg p-3 text-xs text-slate-400 italic"></div>
     </main>
@@ -31,201 +28,178 @@
 
 {% block extra_scripts %}
 <script>
-    // --- Referencias y variables de estado ---
-    const talkButton = document.getElementById('talkButton');
-    const formContainer = document.getElementById('formContainer');
-    const instructionText = document.getElementById('instructionText');
-    const statusBox = document.getElementById('statusBox');
-    const transcriptionBox = document.getElementById('transcriptionBox');
-    let isRecording = false;
-    let tomSelectCategoria, tomSelectCuenta;
+const talkButton = document.getElementById('talkButton');
+const formContainer = document.getElementById('formContainer');
+const instructionText = document.getElementById('instructionText');
+const statusBox = document.getElementById('statusBox');
+const transcriptionBox = document.getElementById('transcriptionBox');
+let isRecording = false;
+let tomSelectCategoria, tomSelectCuenta;
 
-    // --- Lógica de la API de Voz (a prueba de fallos) ---
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      statusBox.textContent = 'Tu navegador no soporta la API de voz.';
-      talkButton.disabled = true;
-    } else {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'es-ES';
-      recognition.continuous = true;
-      recognition.interimResults = true;
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+  statusBox.textContent = 'Tu navegador no soporta la API de voz.';
+  talkButton.disabled = true;
+} else {
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'es-ES';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  let finalTranscript = '';
 
-      let finalTranscript = '';
+  recognition.onstart = () => {
+    isRecording = true;
+    finalTranscript = '';
+    talkButton.classList.add('pulse', 'bg-red-600');
+    talkButton.classList.remove('bg-green-600');
+    instructionText.textContent = 'Escuchando... presiona para parar.';
+    transcriptionBox.innerHTML = '';
+  };
 
-      recognition.onstart = () => {
-        isRecording = true;
-        finalTranscript = '';
-        talkButton.classList.add('pulse', 'bg-red-600');
-        talkButton.classList.remove('bg-green-600');
-        instructionText.textContent = 'Escuchando... presiona para parar.';
-        transcriptionBox.innerHTML = '';
-      };
-
-      recognition.onend = () => {
-        isRecording = false;
-        talkButton.classList.remove('pulse', 'bg-red-600');
-        talkButton.classList.add('bg-green-600');
-        instructionText.textContent = 'Presiona el micrófono para hablar.';
-        if (finalTranscript.trim() && formContainer.classList.contains('hidden')) {
-          analizarTexto(finalTranscript);
-        }
-      };
-
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        // Reconstruye la transcripción desde cero para evitar duplicados en móvil
-        let tempFinal = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            tempFinal += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        finalTranscript = tempFinal;
-        transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
-      };
-      
-      recognition.onerror = (event) => { statusBox.textContent = `Error: ${event.error}`; };
-      
-      talkButton.addEventListener('click', () => {
-        if (isRecording) {
-          recognition.stop();
-        } else {
-          resetState();
-          try {
-            recognition.start();
-          } catch(e) {
-            statusBox.textContent = 'Error al iniciar micrófono. Intenta de nuevo.';
-          }
-        }
-      });
+  recognition.onend = () => {
+    isRecording = false;
+    talkButton.classList.remove('pulse', 'bg-red-600');
+    talkButton.classList.add('bg-green-600');
+    instructionText.textContent = 'Presiona el micrófono para hablar.';
+    if (finalTranscript.trim() && formContainer.classList.contains('hidden')) {
+      analizarTexto(finalTranscript);
     }
+  };
 
-    // --- URLs de Django ---
-    const ANALIZAR_URL = "{% url 'interfaz:analizar' %}";
-    const REGISTRAR_URL = "{% url 'interfaz:registrar' %}";
-    const CREAR_CATEGORIA_URL = "{% url 'interfaz:crear_categoria' %}";
-    const CREAR_CUENTA_URL = "{% url 'interfaz:crear_cuenta' %}";
-
-    // --- Funciones de Interacción ---
-    function resetState() {
-        if (tomSelectCategoria) { tomSelectCategoria.destroy(); tomSelectCategoria = null; }
-        if (tomSelectCuenta) { tomSelectCuenta.destroy(); tomSelectCuenta = null; }
-        formContainer.classList.add('hidden');
-        formContainer.innerHTML = '';
-        talkButton.classList.remove('hidden');
-        talkButton.disabled = false;
-        instructionText.textContent = 'Presiona el micrófono para hablar.';
-        statusBox.textContent = '';
-        transcriptionBox.innerHTML = '';
-    }
-
-    async function analizarTexto(texto) {
-      talkButton.disabled = true;
-      statusBox.textContent = 'Analizando con IA...';
-      try {
-        const response = await fetch(ANALIZAR_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-          body: JSON.stringify({ texto })
-        });
-        const result = await response.json();
-        if (result.error) throw new Error(result.error);
-        populateAndShowForm(result);
-      } catch (err) {
-        statusBox.textContent = `❌ Error: ${err.message}`;
-        resetState();
+  recognition.onresult = (event) => {
+    let interimTranscript = '';
+    let tempFinal = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        tempFinal += transcript + ' ';
+      } else {
+        interimTranscript += transcript;
       }
     }
+    finalTranscript = tempFinal;
+    transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
+  };
 
-    function populateAndShowForm(data) {
-        const { datos_extraidos, todas_las_categorias, todas_las_cuentas } = data;
-        
-        formContainer.innerHTML = `
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label for="input-fecha" class="block mb-1 text-slate-400 font-medium">Fecha</label><input type="date" id="input-fecha" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
-                <div><label for="input-descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label><input type="text" id="input-descripcion" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
-                <div class="sm:col-span-2"><label for="select-categoria" class="block mb-1 text-slate-400 font-medium">Categoría</label><div class="flex items-center gap-2"><select id="select-categoria" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" id="btn-crear-cat" class="bg-green-600 hover:bg-green-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
-                <div class="sm:col-span-2"><label for="select-cuenta" class="block mb-1 text-slate-400 font-medium">Cuenta</label><div class="flex items-center gap-2"><select id="select-cuenta" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" id="btn-crear-cue" class="bg-green-600 hover:bg-green-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
-                <div><label for="input-egresos" class="block mb-1 text-slate-400 font-medium">Egresos ($)</label><input type="number" step="0.01" id="input-egresos" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
-                <div><label for="input-ingresos" class="block mb-1 text-slate-400 font-medium">Ingresos ($)</label><input type="number" step="0.01" id="input-ingresos" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
-            </div>
-            <div class="flex justify-center gap-4 pt-4"><button type="button" id="acceptButton" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar</button><button type="button" id="cancelButton" class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold">Cancelar</button></div>
-        `;
+  recognition.onerror = (event) => { statusBox.textContent = `Error: ${event.error}`; };
 
-        document.getElementById('input-fecha').value = datos_extraidos.fecha || '';
-        document.getElementById('input-descripcion').value = datos_extraidos.descripcion || '';
-        document.getElementById('input-egresos').value = datos_extraidos.egresos || 0;
-        document.getElementById('input-ingresos').value = datos_extraidos.ingresos || 0;
-
-        tomSelectCategoria = new TomSelect('#select-categoria', { options: todas_las_categorias.map(c => ({ value: c, text: c })), create: false, searchField: 'text' });
-        tomSelectCategoria.addItem(datos_extraidos.categoria, true);
-        
-        tomSelectCuenta = new TomSelect('#select-cuenta', { options: todas_las_cuentas.map(c => ({ value: c, text: c })), create: false, searchField: 'text' });
-        tomSelectCuenta.addItem(datos_extraidos.cuenta, true);
-
-        document.getElementById('acceptButton').addEventListener('click', registrarDatos);
-        document.getElementById('cancelButton').addEventListener('click', resetState);
-        document.getElementById('btn-crear-cat').addEventListener('click', () => crearNuevoItem('categoria'));
-        document.getElementById('btn-crear-cue').addEventListener('click', () => crearNuevoItem('cuenta'));
-        
-        instructionText.textContent = 'Verifica y corrige la información.';
-        talkButton.classList.add('hidden');
-        formContainer.classList.remove('hidden');
-        statusBox.textContent = '';
+  talkButton.addEventListener('click', () => {
+    if (isRecording) {
+      recognition.stop();
+    } else {
+      resetState();
+      try { recognition.start(); } catch(e) { statusBox.textContent = 'Error al iniciar micrófono.'; }
     }
+  });
+}
 
-    async function crearNuevoItem(tipo) {
-        const nombre = window.prompt(`Introduce el nombre para la nueva ${tipo}:`);
-        if (!nombre || !nombre.trim()) return;
+const ANALIZAR_URL = "{% url 'interfaz:analizar' %}";
+const REGISTRAR_URL = "{% url 'interfaz:registrar' %}";
+const CREAR_CATEGORIA_URL = "{% url 'interfaz:crear_categoria' %}";
+const CREAR_CUENTA_URL = "{% url 'interfaz:crear_cuenta' %}";
 
-        const url = tipo === 'categoria' ? CREAR_CATEGORIA_URL : CREAR_CUENTA_URL;
-        statusBox.textContent = `Creando nueva ${tipo}...`;
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ nombre })
-            });
-            const result = await response.json();
-            if (result.error || result.status !== 'success') throw new Error(result.message || 'Error desconocido');
+function resetState() {
+  if (tomSelectCategoria) { tomSelectCategoria.destroy(); tomSelectCategoria = null; }
+  if (tomSelectCuenta) { tomSelectCuenta.destroy(); tomSelectCuenta = null; }
+  formContainer.classList.add('hidden');
+  formContainer.innerHTML = '';
+  talkButton.classList.remove('hidden');
+  talkButton.disabled = false;
+  instructionText.textContent = 'Presiona el micrófono para hablar.';
+  statusBox.textContent = '';
+  transcriptionBox.innerHTML = '';
+}
 
-            statusBox.textContent = `¡'${result.nuevo_valor}' creado!`;
-            const selector = tipo === 'categoria' ? tomSelectCategoria : tomSelectCuenta;
-            selector.clearOptions();
-            result.nuevas_opciones.forEach(o => selector.addOption({ value: o, text: o }));
-            selector.addItem(result.nuevo_valor);
-        } catch (err) {
-            statusBox.textContent = `❌ Error al crear: ${err.message}`;
-        }
-    }
+async function analizarTexto(texto) {
+  talkButton.disabled = true;
+  statusBox.textContent = 'Analizando con IA...';
+  try {
+    const response = await fetch(ANALIZAR_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify({ texto }) });
+    const result = await response.json();
+    if (result.error) throw new Error(result.error);
+    populateAndShowForm(result);
+  } catch (err) {
+    statusBox.textContent = `❌ Error: ${err.message}`;
+    resetState();
+  }
+}
 
-    async function registrarDatos() {
-        statusBox.textContent = 'Guardando en Google Sheets...';
-        const datos = {
-            fecha: document.getElementById('input-fecha').value,
-            descripcion: document.getElementById('input-descripcion').value,
-            egresos: parseFloat(document.getElementById('input-egresos').value) || 0,
-            ingresos: parseFloat(document.getElementById('input-ingresos').value) || 0,
-            categoria: tomSelectCategoria.getValue(),
-            cuenta: tomSelectCuenta.getValue()
-        };
-        try {
-            const response = await fetch(REGISTRAR_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ datos })
-            });
-            const result = await response.json();
-            if (result.error) throw new Error(result.error);
-            statusBox.textContent = `✅ ¡Éxito! ${result.message}`;
-            setTimeout(resetState, 2000);
-        } catch (err) {
-            statusBox.textContent = `❌ Error al guardar: ${err.message}`;
-        }
-    }
+function populateAndShowForm(data) {
+  const { datos_extraidos, todas_las_categorias, todas_las_cuentas } = data;
+  formContainer.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div><label for="input-fecha" class="block mb-1 text-slate-400 font-medium">Fecha</label><input type="date" id="input-fecha" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+      <div><label for="input-descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label><input type="text" id="input-descripcion" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+      <div class="sm:col-span-2"><label for="input-cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label><input type="text" id="input-cliente" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+      <div class="sm:col-span-2"><label for="select-categoria" class="block mb-1 text-slate-400 font-medium">Categoría</label><div class="flex items-center gap-2"><select id="select-categoria" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" id="btn-crear-cat" class="bg-green-600 hover:bg-green-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
+      <div class="sm:col-span-2"><label for="select-cuenta" class="block mb-1 text-slate-400 font-medium">Cuenta</label><div class="flex items-center gap-2"><select id="select-cuenta" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" id="btn-crear-cue" class="bg-green-600 hover:bg-green-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
+      <div><label for="input-egresos" class="block mb-1 text-slate-400 font-medium">Egresos ($)</label><input type="number" step="0.01" id="input-egresos" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+      <div><label for="input-ingresos" class="block mb-1 text-slate-400 font-medium">Ingresos ($)</label><input type="number" step="0.01" id="input-ingresos" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+    </div>
+    <div class="flex justify-center gap-4 pt-4"><button type="button" id="acceptButton" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar</button><button type="button" id="cancelButton" class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold">Cancelar</button></div>
+  `;
+
+  document.getElementById('input-fecha').value = datos_extraidos.fecha || '';
+  document.getElementById('input-descripcion').value = datos_extraidos.descripcion || '';
+  document.getElementById('input-cliente').value = datos_extraidos.cliente || '';
+  document.getElementById('input-egresos').value = datos_extraidos.egresos || 0;
+  document.getElementById('input-ingresos').value = datos_extraidos.ingresos || 0;
+
+  tomSelectCategoria = new TomSelect('#select-categoria', { options: todas_las_categorias.map(c => ({ value: c, text: c })), create: false, searchField: 'text' });
+  tomSelectCategoria.addItem(datos_extraidos.categoria, true);
+  tomSelectCuenta = new TomSelect('#select-cuenta', { options: todas_las_cuentas.map(c => ({ value: c, text: c })), create: false, searchField: 'text' });
+  tomSelectCuenta.addItem(datos_extraidos.cuenta, true);
+
+  document.getElementById('acceptButton').addEventListener('click', registrarDatos);
+  document.getElementById('cancelButton').addEventListener('click', resetState);
+  document.getElementById('btn-crear-cat').addEventListener('click', () => crearNuevoItem('categoria'));
+  document.getElementById('btn-crear-cue').addEventListener('click', () => crearNuevoItem('cuenta'));
+
+  instructionText.textContent = 'Verifica y corrige la información.';
+  talkButton.classList.add('hidden');
+  formContainer.classList.remove('hidden');
+  statusBox.textContent = '';
+}
+
+async function crearNuevoItem(tipo){
+  const nombre = window.prompt(`Introduce el nombre para la nueva ${tipo}:`);
+  if(!nombre || !nombre.trim()) return;
+  const url = tipo === 'categoria' ? CREAR_CATEGORIA_URL : CREAR_CUENTA_URL;
+  statusBox.textContent = `Creando nueva ${tipo}...`;
+  try{
+    const response = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({nombre})});
+    const result = await response.json();
+    if(result.error || result.status!=='success') throw new Error(result.message||'Error');
+    statusBox.textContent = `¡'${result.nuevo_valor}' creado!`;
+    const selector = tipo==='categoria'?tomSelectCategoria:tomSelectCuenta;
+    selector.clearOptions();
+    result.nuevas_opciones.forEach(o=>selector.addOption({value:o,text:o}));
+    selector.addItem(result.nuevo_valor);
+  }catch(err){
+    statusBox.textContent = `❌ Error al crear: ${err.message}`;
+  }
+}
+
+async function registrarDatos(){
+  statusBox.textContent = 'Guardando en Google Sheets...';
+  const datos = {
+    fecha: document.getElementById('input-fecha').value,
+    descripcion: document.getElementById('input-descripcion').value,
+    cliente: document.getElementById('input-cliente').value,
+    egresos: parseFloat(document.getElementById('input-egresos').value)||0,
+    ingresos: parseFloat(document.getElementById('input-ingresos').value)||0,
+    categoria: tomSelectCategoria.getValue(),
+    cuenta: tomSelectCuenta.getValue()
+  };
+  try{
+    const response = await fetch(REGISTRAR_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({datos})});
+    const result = await response.json();
+    if(result.error) throw new Error(result.error);
+    statusBox.textContent = `✅ ¡Éxito! ${result.message}`;
+    setTimeout(resetState,2000);
+  }catch(err){
+    statusBox.textContent = `❌ Error al guardar: ${err.message}`;
+  }
+}
 </script>
 {% endblock %}
