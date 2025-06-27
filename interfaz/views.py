@@ -249,7 +249,6 @@ def dashboard(request):
                 'totales_anio': _totales_desde(qs_cuenta.filter(fecha__gte=inicio_anio)),
             }
         )
-
     context = {
         'totales_semana': totales_semana,
         'totales_mes': totales_mes,
