@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Registro{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4">
+  <header class="text-center mb-6">
+    <h1 class="text-2xl font-bold text-white">Editar Registro</h1>
+    <a href="{% url 'interfaz:dashboard' %}" class="text-cyan-400 hover:text-cyan-300">← Volver al dashboard</a>
+  </header>
+  <form method="post" class="bg-slate-800 rounded-lg p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label for="fecha" class="block mb-1 text-slate-400 font-medium">Fecha</label>
+      <input type="date" id="fecha" name="fecha" value="{{ registro.fecha|date:'Y-m-d' }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+    </div>
+    <div>
+      <label for="descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label>
+      <input type="text" id="descripcion" name="descripcion" value="{{ registro.descripcion }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+    </div>
+    <div>
+      <label for="cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label>
+      <input type="text" id="cliente" name="cliente" value="{{ registro.cliente.nombre|default:'' }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3">
+    </div>
+    <div>
+      <label for="categoria" class="block mb-1 text-slate-400 font-medium">Categoría</label>
+      <select id="categoria" name="categoria" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+        <option value="">--</option>
+        {% for c in categorias %}
+        <option value="{{ c.nombre }}" {% if registro.categoria and registro.categoria.id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="cuenta" class="block mb-1 text-slate-400 font-medium">Cuenta</label>
+      <select id="cuenta" name="cuenta" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+        <option value="">--</option>
+        {% for c in cuentas %}
+        <option value="{{ c.nombre }}" {% if registro.cuenta and registro.cuenta.id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="egresos" class="block mb-1 text-slate-400 font-medium">Egresos</label>
+      <input type="number" step="0.01" id="egresos" name="egresos" value="{{ registro.egresos }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3">
+    </div>
+    <div>
+      <label for="ingresos" class="block mb-1 text-slate-400 font-medium">Ingresos</label>
+      <input type="number" step="0.01" id="ingresos" name="ingresos" value="{{ registro.ingresos }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3">
+    </div>
+    <div class="text-center pt-4">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

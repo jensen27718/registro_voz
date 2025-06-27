@@ -16,6 +16,7 @@
         .ts-dropdown { background-color: #334155 !important; border-color: #475569 !important; }
         .ts-dropdown .option, .ts-dropdown .create { color: #cbd5e1 !important; }
         .ts-dropdown .active { background-color: #0ea5e9 !important; color: #fff !important; }
+        .completed-row td { text-decoration: line-through; color: #94a3b8; }
     </style>
     {% block extra_styles %}{% endblock %}
 </head>
@@ -33,6 +34,7 @@
                         {% with request.resolver_match.app_name as app_name %}
                         <a href="{% url 'gestor_tareas:lista_tareas' %}" class="px-3 py-2 rounded-md text-sm font-medium {% if app_name == 'gestor_tareas' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Tareas</a>
                         <a href="{% url 'interfaz:home' %}" class="px-3 py-2 rounded-md text-sm font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Contabilidad</a>
+                        <a href="{% url 'interfaz:dashboard' %}" class="px-3 py-2 rounded-md text-sm font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Dashboard</a>
                         {% endwith %}
                     </div>
                 </div>
@@ -51,6 +53,7 @@
                 {% with request.resolver_match.app_name as app_name %}
                 <a href="{% url 'gestor_tareas:lista_tareas' %}" class="block px-3 py-2 rounded-md text-base font-medium {% if app_name == 'gestor_tareas' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Tareas</a>
                 <a href="{% url 'interfaz:home' %}" class="block px-3 py-2 rounded-md text-base font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Contabilidad</a>
+                <a href="{% url 'interfaz:dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium {% if app_name == 'interfaz' %} bg-slate-900 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">Dashboard</a>
                 {% endwith %}
             </div>
         </div>
