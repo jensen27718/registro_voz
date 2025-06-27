@@ -29,6 +29,34 @@
     </div>
   </div>
 
+  <h2 class="text-xl font-semibold mb-4">Resumen por Cuenta</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    {% for c in cuentas_data %}
+    <div class="bg-slate-800 rounded-lg p-4 space-y-2">
+      <h3 class="text-center font-bold text-cyan-400">{{ c.cuenta.nombre }}</h3>
+      <p class="text-center font-semibold">Saldo actual: ${{ c.saldo_actual }}</p>
+      <div class="grid grid-cols-3 gap-2 text-sm">
+        <div>
+          <h4 class="text-center text-slate-400 font-semibold mb-1">Semana</h4>
+          <p>Ing: ${{ c.totales_semana.ingresos }}</p>
+          <p>Egr: ${{ c.totales_semana.egresos }}</p>
+        </div>
+        <div>
+          <h4 class="text-center text-slate-400 font-semibold mb-1">Mes</h4>
+          <p>Ing: ${{ c.totales_mes.ingresos }}</p>
+          <p>Egr: ${{ c.totales_mes.egresos }}</p>
+        </div>
+        <div>
+          <h4 class="text-center text-slate-400 font-semibold mb-1">Año</h4>
+          <p>Ing: ${{ c.totales_anio.ingresos }}</p>
+          <p>Egr: ${{ c.totales_anio.egresos }}</p>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-slate-500">Sin cuentas registradas.</p>
+    {% endfor %}
+  </div>
   <h2 class="text-xl font-semibold mb-4">Últimos 10 registros</h2>
   <div class="bg-slate-800 rounded-lg overflow-hidden shadow-xl">
     <table class="w-full text-sm">
