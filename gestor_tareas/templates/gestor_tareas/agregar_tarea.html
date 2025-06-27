@@ -20,19 +20,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-10 h-10"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" /><path fill-rule="evenodd" d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-4a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z" clip-rule="evenodd" /></svg>
             </button>
 
-            <!-- Formulario dinámico -->
-            <form id="formContainer" class="hidden mt-8 space-y-4 text-sm">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label for="input-cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label><input type="text" id="input-cliente" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
-                    <div><label for="input-telefono" class="block mb-1 text-slate-400 font-medium">Teléfono (Opcional)</label><input type="tel" id="input-telefono" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
-                    <div class="sm:col-span-2"><label for="select-tipo" class="block mb-1 text-slate-400 font-medium">Tipo de Trabajo</label><div class="flex items-center gap-2"><select id="select-tipo" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" onclick="crearNuevoItem('tipo')" class="bg-cyan-600 hover:bg-cyan-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
-                    <div><label for="select-prioridad" class="block mb-1 text-slate-400 font-medium">Prioridad</label><select id="select-prioridad" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"></select></div>
-                    <div><label for="select-estado" class="block mb-1 text-slate-400 font-medium">Estado</label><select id="select-estado" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"></select></div>
-                    <div class="sm:col-span-2"><label for="input-descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label><textarea id="input-descripcion" rows="3" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"></textarea></div>
-                    <input type="hidden" id="input-fecha_recibido"/>
-                </div>
-                <div class="flex justify-center gap-4 pt-4"><button type="button" id="acceptButton" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar Tarea</button><button type="button" id="cancelButton" class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold">Cancelar</button></div>
-            </form>
+            <!-- El formulario se inyectará aquí con JavaScript -->
+            <form id="formContainer" class="hidden mt-8 space-y-4 text-sm"></form>
         </section>
 
         <div id="statusBox" class="min-h-[1.75rem] text-center text-sm font-medium text-slate-400"></div>
@@ -43,21 +32,16 @@
 
 {% block extra_scripts %}
 <script>
-    // --- Referencias a elementos de la UI ---
+    // --- Referencias y variables de estado ---
     const talkButton = document.getElementById('talkButton');
     const formContainer = document.getElementById('formContainer');
     const instructionText = document.getElementById('instructionText');
     const statusBox = document.getElementById('statusBox');
     const transcriptionBox = document.getElementById('transcriptionBox');
-    const acceptButton = document.getElementById('acceptButton');
-    const cancelButton = document.getElementById('cancelButton');
+    let isRecording = false;
     let tomSelectTipo;
 
-    // --- Variables de estado para la grabación ---
-    let isRecording = false;
-    let finalTranscript = '';
-
-    // --- Configuración de la API de Voz ---
+    // --- Lógica de la API de Voz (a prueba de fallos) ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       statusBox.textContent = 'Tu navegador no soporta la API de voz.';
@@ -67,6 +51,8 @@
       recognition.lang = 'es-ES';
       recognition.continuous = true;
       recognition.interimResults = true;
+
+      let finalTranscript = '';
 
       recognition.onstart = () => {
         isRecording = true;
@@ -89,22 +75,22 @@
 
       recognition.onresult = (event) => {
         let interimTranscript = '';
-        finalTranscript = ''; // <-- LA CLAVE PARA EVITAR REPETICIONES EN MÓVIL
-        for (let i = 0; i < event.results.length; ++i) {
+        // Reconstruye la transcripción desde cero para evitar duplicados en móvil
+        let tempFinal = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
+            tempFinal += transcript + ' ';
           } else {
-            interimTranscript += event.results[i][0].transcript;
+            interimTranscript += transcript;
           }
         }
+        finalTranscript = tempFinal;
         transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
       };
-
-      recognition.onerror = (event) => {
-        console.error('SpeechRecognition error:', event.error);
-        statusBox.textContent = `Error de micrófono: ${event.error}.`;
-      };
-
+      
+      recognition.onerror = (event) => { statusBox.textContent = `Error: ${event.error}`; };
+      
       talkButton.addEventListener('click', () => {
         if (isRecording) {
           recognition.stop();
@@ -112,59 +98,90 @@
           resetState();
           try {
             recognition.start();
-          } catch (e) {
-            console.error('Error al iniciar reconocimiento:', e);
-            statusBox.textContent = 'No se pudo iniciar el micrófono.';
+          } catch(e) {
+            statusBox.textContent = 'Error al iniciar micrófono. Intenta de nuevo.';
           }
         }
       });
     }
 
-    // --- URLs de Django ---
+    // --- El resto del JS para manejar el formulario y la IA ---
     const ANALIZAR_TAREA_URL = "{% url 'gestor_tareas:analizar_tarea' %}";
     const REGISTRAR_TAREA_URL = "{% url 'gestor_tareas:registrar_tarea' %}";
     const CREAR_TIPO_URL = "{% url 'gestor_tareas:crear_tipo' %}";
 
-    // --- Funciones de Interacción con el Backend ---
+    function resetState() {
+        if (tomSelectTipo) {
+            tomSelectTipo.destroy();
+            tomSelectTipo = null;
+        }
+        formContainer.classList.add('hidden');
+        formContainer.innerHTML = ''; // Limpia el formulario viejo
+        talkButton.classList.remove('hidden');
+        talkButton.disabled = false;
+        instructionText.textContent = 'Presiona para dictar una nueva tarea.';
+        statusBox.textContent = '';
+        transcriptionBox.innerHTML = '';
+    }
+
     async function analizarTexto(texto) {
-      statusBox.textContent = 'Analizando con IA...';
-      talkButton.disabled = true;
-      try {
-        const response = await fetch(ANALIZAR_TAREA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-          body: JSON.stringify({ texto })
-        });
-        const result = await response.json();
-        if (result.error) throw new Error(result.error);
-        populateAndShowForm(result);
-      } catch (err) {
-        statusBox.textContent = `❌ Error: ${err.message}`;
-        resetState();
-      }
+        talkButton.disabled = true;
+        statusBox.textContent = 'Analizando con IA...';
+        try {
+            const response = await fetch(ANALIZAR_TAREA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ texto })
+            });
+            const result = await response.json();
+            if (result.error) throw new Error(result.error);
+            populateAndShowForm(result);
+        } catch (err) {
+            statusBox.textContent = `❌ Error: ${err.message}`;
+            resetState();
+        }
     }
 
     function populateAndShowForm(data) {
         const { datos_extraidos, todos_los_tipos, todas_las_prioridades, todos_los_estados } = data;
-        statusBox.textContent = '';
-        if (tomSelectTipo) tomSelectTipo.destroy();
+        
+        // Inyecta el HTML del formulario
+        formContainer.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label for="input-cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label><input type="text" id="input-cliente" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                <div><label for="input-telefono" class="block mb-1 text-slate-400 font-medium">Teléfono (Opcional)</label><input type="tel" id="input-telefono" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                <div class="sm:col-span-2"><label for="select-tipo" class="block mb-1 text-slate-400 font-medium">Tipo de Trabajo</label><div class="flex items-center gap-2"><select id="select-tipo" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" id="btn-crear-tipo" class="bg-cyan-600 hover:bg-cyan-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
+                <div><label for="select-prioridad" class="block mb-1 text-slate-400 font-medium">Prioridad</label><select id="select-prioridad" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3"></select></div>
+                <div><label for="select-estado" class="block mb-1 text-slate-400 font-medium">Estado</label><select id="select-estado" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3"></select></div>
+                <div class="sm:col-span-2"><label for="input-descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label><textarea id="input-descripcion" rows="3" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3"></textarea></div>
+                <input type="hidden" id="input-fecha_recibido"/>
+            </div>
+            <div class="flex justify-center gap-4 pt-4"><button type="button" id="acceptButton" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar Tarea</button><button type="button" id="cancelButton" class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold">Cancelar</button></div>
+        `;
+
+        // Rellena los datos
         document.getElementById('input-cliente').value = datos_extraidos.cliente || '';
         document.getElementById('input-telefono').value = datos_extraidos.telefono || '';
         document.getElementById('input-descripcion').value = datos_extraidos.descripcion || '';
         document.getElementById('input-fecha_recibido').value = new Date().toISOString().split('T')[0];
+        
         populateSelect('select-prioridad', todas_las_prioridades, datos_extraidos.prioridad);
         populateSelect('select-estado', todos_los_estados, 'Recibido');
-        tomSelectTipo = new TomSelect('#select-tipo', {
-            options: todos_los_tipos.map(t => ({ value: t, text: t })),
-            create: false,
-            searchField: 'text'
-        });
+
+        tomSelectTipo = new TomSelect('#select-tipo', { options: todos_los_tipos.map(t => ({ value: t, text: t })), create: false, searchField: 'text' });
         tomSelectTipo.addItem(datos_extraidos.tipo, true);
+
+        // Añade listeners a los nuevos botones
+        document.getElementById('acceptButton').addEventListener('click', registrarDatos);
+        document.getElementById('cancelButton').addEventListener('click', resetState);
+        document.getElementById('btn-crear-tipo').addEventListener('click', () => crearNuevoItem('tipo'));
+        
         instructionText.textContent = 'Verifica y corrige la información.';
         talkButton.classList.add('hidden');
         formContainer.classList.remove('hidden');
+        statusBox.textContent = '';
     }
-
+    
     function populateSelect(selectId, options, selectedValue) {
         const select = document.getElementById(selectId);
         select.innerHTML = '';
@@ -223,19 +240,5 @@
             statusBox.textContent = `❌ Error al guardar: ${err.message}`;
         }
     }
-
-    function resetState() {
-        if (tomSelectTipo) tomSelectTipo.destroy();
-        formContainer.classList.add('hidden');
-        formContainer.reset();
-        talkButton.classList.remove('hidden');
-        talkButton.disabled = false;
-        instructionText.textContent = 'Presiona para dictar una nueva tarea.';
-        statusBox.textContent = '';
-        transcriptionBox.innerHTML = '';
-    }
-    
-    acceptButton.addEventListener('click', registrarDatos);
-    cancelButton.addEventListener('click', resetState);
 </script>
 {% endblock %}

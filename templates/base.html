@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Asistente Inteligente{% endblock %}</title>
-
-    <!-- Recursos comunes (CSS/JS) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .pulse { animation: pulse-animation 1.6s infinite; }
@@ -20,20 +17,15 @@
         .ts-dropdown .option, .ts-dropdown .create { color: #cbd5e1 !important; }
         .ts-dropdown .active { background-color: #0ea5e9 !important; color: #fff !important; }
     </style>
-    
     {% block extra_styles %}{% endblock %}
 </head>
 <body class="bg-gradient-to-b from-slate-900 to-slate-800 text-white min-h-screen">
-
-    <!-- =========== BARRA DE NAVEGACIÓN RESPONSIVA =========== -->
-    <nav class="bg-slate-800/60 backdrop-blur shadow-lg">
+    <!-- BARRA DE NAVEGACIÓN RESPONSIVA -->
+    <nav class="bg-slate-800/60 backdrop-blur shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
                 <div class="flex-shrink-0">
-                    <a href="{% url 'gestor_tareas:lista_tareas' %}" class="text-white font-bold text-xl">
-                        Asistente <span class="text-cyan-400">PRO</span>
-                    </a>
+                    <a href="{% url 'gestor_tareas:lista_tareas' %}" class="text-white font-bold text-xl">Asistente <span class="text-cyan-400">PRO</span></a>
                 </div>
                 <!-- Menú de Escritorio -->
                 <div class="hidden md:block">
@@ -44,18 +36,16 @@
                         {% endwith %}
                     </div>
                 </div>
-                <!-- Botón Hamburguesa (visible solo en móvil) -->
+                <!-- Botón Hamburguesa -->
                 <div class="-mr-2 flex md:hidden">
-                    <button id="mobile-menu-button" type="button" class="bg-slate-700 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
-                        <span class="sr-only">Abrir menú principal</span>
-                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        <svg class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button id="mobile-menu-button" type="button" class="bg-slate-700 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-600 focus:outline-none">
+                        <svg id="icon-open" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        <svg id="icon-close" class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
             </div>
         </div>
-
-        <!-- Menú Móvil (oculto por defecto) -->
+        <!-- Menú Móvil -->
         <div class="md:hidden hidden" id="mobile-menu">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                 {% with request.resolver_match.app_name as app_name %}
@@ -65,24 +55,29 @@
             </div>
         </div>
     </nav>
-    <!-- ============================================= -->
 
     <main class="py-10">
         {% block content %}{% endblock %}
     </main>
 
-    {% block extra_scripts %}
+    <!-- === SCRIPT DEL MENÚ (FUERA DEL BLOQUE) === -->
     <script>
-        // === JAVASCRIPT PARA EL MENÚ MÓVIL ===
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
+        document.addEventListener('DOMContentLoaded', function () {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const iconOpen = document.getElementById('icon-open');
+            const iconClose = document.getElementById('icon-close');
 
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-            // Opcional: cambiar el ícono de hamburguesa a X
-            mobileMenuButton.querySelectorAll('svg').forEach(icon => icon.classList.toggle('hidden'));
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    iconOpen.classList.toggle('hidden');
+                    iconClose.classList.toggle('hidden');
+                });
+            }
         });
     </script>
-    {% endblock %}
+    
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>
