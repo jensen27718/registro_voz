@@ -23,4 +23,4 @@ class RegistroAdmin(admin.ModelAdmin):
     list_display = ('fecha', 'descripcion', 'cliente', 'categoria', 'cuenta', 'ingresos', 'egresos')
     list_filter = ('cliente', 'categoria', 'cuenta')
     search_fields = ('descripcion',)
-
+    
