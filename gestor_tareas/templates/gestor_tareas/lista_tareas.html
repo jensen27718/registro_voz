@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Tareas{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-3xl font-bold text-white text-center sm:text-left">
+            Gestor de <span class="text-cyan-400">Tareas</span>
+        </h1>
+        <a href="{% url 'gestor_tareas:agregar_tarea_voz' %}" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Agregar Tarea
+        </a>
+    </header>
+
+    <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
+
+    <div class="bg-slate-800 rounded-lg shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left table-auto">
+                <thead class="text-xs text-slate-400 uppercase">
+                    <tr>
+                        <th class="px-4 py-3">Cliente / Teléfono</th>
+                        <th class="px-4 py-3">Tipo</th>
+                        <th class="px-4 py-3">Descripción</th>
+                        <th class="px-4 py-3">Estado</th>
+                        <th class="px-4 py-3">Prioridad</th>
+                        <th class="px-4 py-3">Recibido</th>
+                        <th class="px-4 py-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700">
+                    {% for tarea in tareas %}
+                    <tr id="tarea-row-{{ tarea.id }}" class="hover:bg-slate-700/50 transition-colors duration-200 {% if tarea.estado == 'Completado' %}completed-row{% endif %}">
+                        
+                        <td class="px-4 py-3 font-medium text-white">
+                            {{ tarea.cliente }}
+                            {% if tarea.telefono %}
+                                <br><span class="text-xs text-slate-400">{{ tarea.telefono }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-4 py-3">{{ tarea.tipo.nombre|default:"--" }}</td>
+                        <td class="px-4 py-3 text-slate-400 italic">{{ tarea.descripcion|truncatewords:10|default:"--" }}</td>
+                        <td class="px-4 py-3">
+                            <select onchange="actualizarEstado(this)" data-task-id="{{ tarea.id }}" class="bg-slate-700 border border-slate-600 rounded-md p-1 text-xs focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                                {% for value, label in estados_posibles %}
+                                <option value="{{ value }}" {% if tarea.estado == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span class="px-2 py-1 font-semibold leading-tight rounded-full text-xs
+                            {% if tarea.prioridad == 'Urgente' %} bg-red-700 text-red-100 {% else %} bg-sky-700 text-sky-100 {% endif %}">
+                            {{ tarea.prioridad }}
+                          </span>
+                        </td>
+                        <td class="px-4 py-3">{{ tarea.fecha_recibido|date:"Y-m-d" }}</td>
+                        
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <a href="{% url 'gestor_tareas:editar_tarea' tarea.id %}" class="text-yellow-400 hover:text-yellow-300 mr-3 font-medium">Editar</a>
+                            <button onclick="ocultarTarea({{ tarea.id }})" class="text-red-500 hover:text-red-400 font-medium">Ocultar</button>
+                        </td>
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-10 text-slate-500">No hay tareas visibles. ¡Agrega la primera!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Función para actualizar el estado de una tarea desde el menú desplegable
+    async function actualizarEstado(selectElement) {
+        const tareaId = selectElement.dataset.taskId;
+        const nuevoEstado = selectElement.value;
+        const statusBox = document.getElementById('status-message');
+
+        statusBox.textContent = 'Actualizando...';
+        statusBox.className = 'mb-4 text-center font-medium text-yellow-400';
+
+        try {
+            const response = await fetch("{% url 'gestor_tareas:actualizar_estado' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ tarea_id: tareaId, nuevo_estado: nuevoEstado })
+            });
+
+            const result = await response.json();
+            if (result.status !== 'success') throw new Error(result.message);
+
+            statusBox.textContent = `✅ ${result.message}`;
+            statusBox.className = 'mb-4 text-center font-medium text-green-400';
+
+            const row = document.getElementById(`tarea-row-${tareaId}`);
+            if (nuevoEstado === 'Completado') {
+                row.classList.add('completed-row');
+            } else {
+                row.classList.remove('completed-row');
+            }
+
+        } catch (error) {
+            statusBox.textContent = `❌ Error: ${error.message}`;
+            statusBox.className = 'mb-4 text-center font-medium text-red-400';
+        } finally {
+            setTimeout(() => { statusBox.textContent = ''; }, 3000);
+        }
+    }
+
+    // Función para ocultar (archivar) una tarea
+    async function ocultarTarea(tareaId) {
+        if (!confirm(`¿Estás seguro de que quieres archivar la tarea #${tareaId}?`)) {
+            return;
+        }
+
+        const statusBox = document.getElementById('status-message');
+        statusBox.textContent = 'Archivando...';
+        statusBox.className = 'mb-4 text-center font-medium text-yellow-400';
+        
+        try {
+            const response = await fetch(`/tareas/ocultar/${tareaId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            });
+
+            const result = await response.json();
+            if (result.status !== 'success') throw new Error(result.message);
+
+            statusBox.textContent = `✅ ${result.message}`;
+            statusBox.className = 'mb-4 text-center font-medium text-green-400';
+
+            // Ocultar la fila de la tabla para feedback inmediato con una animación
+            const row = document.getElementById(`tarea-row-${tareaId}`);
+            if (row) {
+                row.style.transition = 'opacity 0.5s ease-out';
+                row.style.opacity = '0';
+                setTimeout(() => row.remove(), 500);
+            }
+
+        } catch (error) {
+            statusBox.textContent = `❌ Error: ${error.message}`;
+            statusBox.className = 'mb-4 text-center font-medium text-red-400';
+        } finally {
+            setTimeout(() => { statusBox.textContent = ''; }, 3000);
+        }
+    }
+</script>
+{% endblock %}

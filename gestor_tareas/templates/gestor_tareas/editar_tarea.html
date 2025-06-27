@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Tarea #{{ tarea.id }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gradient-to-b from-slate-900 to-slate-800 text-white min-h-screen flex flex-col items-center justify-center px-4 py-6">
+
+    <main class="w-full max-w-lg">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white">Editar Tarea <span class="text-cyan-400">#{{ tarea.id }}</span></h1>
+            <a href="{% url 'gestor_tareas:lista_tareas' %}" class="text-cyan-400 hover:text-cyan-300 mt-2 inline-block">← Cancelar y volver a la lista</a>
+        </header>
+
+        <form method="POST" action="{% url 'gestor_tareas:editar_tarea' tarea.id %}" class="bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl p-8 space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Cliente -->
+                <div>
+                    <label for="cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label>
+                    <input type="text" name="cliente" id="cliente" value="{{ tarea.cliente }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+                </div>
+                <!-- Teléfono -->
+                <div>
+                    <label for="telefono" class="block mb-1 text-slate-400 font-medium">Teléfono (Opcional)</label>
+                    <input type="tel" name="telefono" id="telefono" value="{{ tarea.telefono|default_if_none:'' }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <!-- Tipo de Trabajo -->
+                <div class="sm:col-span-2">
+                    <label for="tipo" class="block mb-1 text-slate-400 font-medium">Tipo de Trabajo</label>
+                    <select name="tipo" id="tipo" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        <option value="">-- Ninguno --</option>
+                        {% for tipo in todos_los_tipos %}
+                        <option value="{{ tipo.nombre }}" {% if tarea.tipo.id == tipo.id %}selected{% endif %}>{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Prioridad -->
+                <div>
+                    <label for="prioridad" class="block mb-1 text-slate-400 font-medium">Prioridad</label>
+                    <select name="prioridad" id="prioridad" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        {% for value, label in todas_las_prioridades %}
+                        <option value="{{ value }}" {% if tarea.prioridad == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Estado -->
+                <div>
+                    <label for="estado" class="block mb-1 text-slate-400 font-medium">Estado</label>
+                    <select name="estado" id="estado" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        {% for value, label in todos_los_estados %}
+                        <option value="{{ value }}" {% if tarea.estado == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                 <!-- Descripción -->
+                 <div class="sm:col-span-2">
+                    <label for="descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label>
+                    <textarea name="descripcion" id="descripcion" rows="4" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">{{ tarea.descripcion }}</textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-center pt-4">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 py-3 px-8 rounded-lg font-semibold text-base">Guardar Cambios</button>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

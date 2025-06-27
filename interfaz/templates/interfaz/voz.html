@@ -1,224 +1,52 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asistente Contable</title>
+{% extends 'base.html' %}
 
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Tom‑Select -->
-  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-  <!-- Inter font -->
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+{% block title %}Asistente Contable por Voz{% endblock %}
 
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+{% block content %}
+<div class="flex flex-col items-center justify-center px-4">
+    <!-- Header específico de esta página -->
+    <header class="w-full max-w-md text-center mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Asistente <span class="text-green-400">Contable</span>
+        </h1>
+    </header>
 
-    /* Mic pulse */
-    .pulse {
-      animation: pulse-animation 1.6s infinite;
-    }
-    @keyframes pulse-animation {
-      0% {
-        box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
-      }
-      100% {
-        box-shadow: 0 0 0 25px rgba(14, 165, 233, 0);
-      }
-    }
+    <!-- Contenedor de Interacción -->
+    <main class="w-full max-w-md space-y-6">
+        <section id="interactionContainer" class="w-full bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl p-6">
+            
+            <p id="instructionText" class="text-center text-base sm:text-lg text-green-400 mb-6">
+                Presiona el micrófono para hablar.
+            </p>
 
-    /* Dark‑mode tweaks for Tom‑Select */
-    .ts-control {
-      background-color: #334155 !important;
-      border-color: #475569 !important;
-      color: #fff !important;
-    }
-    .ts-dropdown {
-      background-color: #334155 !important;
-      border-color: #475569 !important;
-    }
-    .ts-dropdown .option,
-    .ts-dropdown .create {
-      color: #cbd5e1 !important;
-    }
-    .ts-dropdown .active {
-      background-color: #0ea5e9 !important;
-      color: #fff !important;
-    }
+            <button id="talkButton" class="mx-auto flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-green-600 hover:bg-green-700 transition-all focus:outline-none focus:ring-4 focus:ring-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-10 h-10"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" /><path fill-rule="evenodd" d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-4a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z" clip-rule="evenodd"/></svg>
+            </button>
 
-    /* Remove number input spinners */
-    input[type='number']::-webkit-outer-spin-button,
-    input[type='number']::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    input[type='number'] {
-      -moz-appearance: textfield;
-    }
-  </style>
-</head>
-<body class="bg-gradient-to-b from-slate-900 to-slate-800 text-white min-h-screen flex flex-col items-center justify-center px-4 py-6">
-  <!-- Header -->
-  <header class="w-full max-w-md text-center mb-8">
-    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
-      Asistente&nbsp;<span class="text-cyan-400">Contable</span>
-    </h1>
-  </header>
+            <!-- Formulario dinámico -->
+            <form id="formContainer" class="hidden mt-8 space-y-4 text-sm">
+                <!-- (El HTML del formulario no cambia, solo se queda aquí) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label for="input-fecha" class="block mb-1 text-slate-400 font-medium">Fecha</label><input type="date" id="input-fecha" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                    <div><label for="input-descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label><input type="text" id="input-descripcion" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                    <div class="sm:col-span-2"><label for="select-categoria" class="block mb-1 text-slate-400 font-medium">Categoría</label><div class="flex items-center gap-2"><select id="select-categoria" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" onclick="crearNuevoItem('categoria')" class="bg-green-600 hover:bg-green-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
+                    <div class="sm:col-span-2"><label for="select-cuenta" class="block mb-1 text-slate-400 font-medium">Cuenta</label><div class="flex items-center gap-2"><select id="select-cuenta" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" onclick="crearNuevoItem('cuenta')" class="bg-green-600 hover:bg-green-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
+                    <div><label for="input-egresos" class="block mb-1 text-slate-400 font-medium">Egresos ($)</label><input type="number" step="0.01" id="input-egresos" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                    <div><label for="input-ingresos" class="block mb-1 text-slate-400 font-medium">Ingresos ($)</label><input type="number" step="0.01" id="input-ingresos" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                </div>
+                <div id="confirmationControls" class="flex justify-center gap-4 pt-4"><button type="button" id="acceptButton" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar</button><button type="button" id="cancelButton" class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold">Cancelar</button></div>
+            </form>
+        </section>
 
-  <!-- Interaction card -->
-  <main class="w-full max-w-md space-y-6">
-    <section id="interactionContainer" class="w-full bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl p-6">
-      <!-- Instruction -->
-      <p id="instructionText" class="text-center text-base sm:text-lg text-cyan-400 mb-6">
-        Presiona el micrófono para hablar.
-      </p>
+        <div id="statusBox" class="min-h-[1.75rem] text-center text-sm font-medium text-slate-400"></div>
+        <div id="transcriptionBox" class="bg-slate-800/40 rounded-lg p-3 text-xs text-slate-400 italic"></div>
+    </main>
+</div>
+{% endblock %}
 
-      <!-- Mic button -->
-      <button
-        id="talkButton"
-        class="mx-auto flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-cyan-600 hover:bg-cyan-700 transition-all focus:outline-none focus:ring-4 focus:ring-cyan-500"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          class="w-10 h-10"
-        >
-          <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
-          <path
-            fill-rule="evenodd"
-            d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-4a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        <span class="sr-only">Iniciar dictado</span>
-      </button>
-
-      <!-- Dynamic form -->
-      <form id="formContainer" class="hidden mt-8 space-y-4 text-sm">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Fecha -->
-          <div>
-            <label
-              for="input-fecha"
-              class="block mb-1 text-slate-400 font-medium"
-              >Fecha</label
-            >
-            <input
-              type="date"
-              id="input-fecha"
-              class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-          <!-- Descripción -->
-          <div>
-            <label
-              for="input-descripcion"
-              class="block mb-1 text-slate-400 font-medium"
-              >Descripción</label
-            >
-            <input
-              type="text"
-              id="input-descripcion"
-              class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <!-- Categoría -->
-          <div class="sm:col-span-2">
-            <label for="select-categoria" class="block mb-1 text-slate-400 font-medium"
-              >Categoría</label
-            >
-            <div class="flex items-center gap-2">
-              <select id="select-categoria" class="flex-grow" placeholder="Busca o selecciona..."></select>
-              <button
-                type="button"
-                onclick="crearNuevoItem('categoria')"
-                class="bg-cyan-600 hover:bg-cyan-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <!-- Cuenta -->
-          <div class="sm:col-span-2">
-            <label for="select-cuenta" class="block mb-1 text-slate-400 font-medium"
-              >Cuenta</label
-            >
-            <div class="flex items-center gap-2">
-              <select id="select-cuenta" class="flex-grow" placeholder="Busca o selecciona..."></select>
-              <button
-                type="button"
-                onclick="crearNuevoItem('cuenta')"
-                class="bg-cyan-600 hover:bg-cyan-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <!-- Egresos / Ingresos -->
-          <div>
-            <label for="input-egresos" class="block mb-1 text-slate-400 font-medium"
-              >Egresos ($)</label
-            >
-            <input
-              type="number"
-              step="0.01"
-              id="input-egresos"
-              class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-          <div>
-            <label for="input-ingresos" class="block mb-1 text-slate-400 font-medium"
-              >Ingresos ($)</label
-            >
-            <input
-              type="number"
-              step="0.01"
-              id="input-ingresos"
-              class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-        </div>
-
-        <!-- Confirm / cancel -->
-        <div id="confirmationControls" class="flex justify-center gap-4 pt-4">
-          <button
-            type="button"
-            id="acceptButton"
-            class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold"
-          >
-            Guardar
-          </button>
-          <button
-            type="button"
-            id="cancelButton"
-            class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold"
-          >
-            Cancelar
-          </button>
-        </div>
-      </form>
-    </section>
-
-    <!-- Status & transcription -->
-    <div id="statusBox" class="min-h-[1.75rem] text-center text-sm font-medium text-slate-400"></div>
-    <div
-      id="transcriptionBox"
-      class="bg-slate-800/40 rounded-lg p-3 text-xs text-slate-400 italic"
-    ></div>
-  </main>
-
-  <!-- ========================  SCRIPT  ======================== -->
-  <script>
-    // --------- variables de referencia UI ---------
+{% block extra_scripts %}
+<script>
+    // --- Referencias a elementos de la UI ---
     const talkButton = document.getElementById('talkButton');
     const formContainer = document.getElementById('formContainer');
     const instructionText = document.getElementById('instructionText');
@@ -226,11 +54,13 @@
     const transcriptionBox = document.getElementById('transcriptionBox');
     const acceptButton = document.getElementById('acceptButton');
     const cancelButton = document.getElementById('cancelButton');
-
     let tomSelectCategoria, tomSelectCuenta;
-    let isRecording = false;
 
-    // --------- Speech API ---------
+    // --- Variables de estado para la grabación ---
+    let isRecording = false;
+    let finalTranscript = ''; // Almacena el texto completo de la grabación
+
+    // --- Configuración de la API de Voz ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       statusBox.textContent = 'Tu navegador no soporta la API de voz.';
@@ -238,14 +68,18 @@
     } else {
       const recognition = new SpeechRecognition();
       recognition.lang = 'es-ES';
-      recognition.continuous = false; // móvil friendly
-      recognition.interimResults = false;
+      
+      // ===== CAMBIO CLAVE PARA ESCUCHA CONTINUA =====
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      // ===============================================
 
       recognition.onstart = () => {
         isRecording = true;
+        finalTranscript = ''; // Limpia la transcripción anterior
         talkButton.classList.add('pulse', 'bg-red-600');
-        talkButton.classList.remove('bg-cyan-600');
-        instructionText.textContent = 'Escuchando...';
+        talkButton.classList.remove('bg-green-600');
+        instructionText.textContent = 'Escuchando... presiona para parar.';
         statusBox.textContent = '';
         transcriptionBox.innerHTML = '';
       };
@@ -253,28 +87,40 @@
       recognition.onend = () => {
         isRecording = false;
         talkButton.classList.remove('pulse', 'bg-red-600');
-        talkButton.classList.add('bg-cyan-600');
+        talkButton.classList.add('bg-green-600');
         instructionText.textContent = 'Presiona el micrófono para hablar.';
+        // Solo analiza si hay texto y no se ha mostrado ya el formulario
+        if (finalTranscript.trim() && formContainer.classList.contains('hidden')) {
+          analizarTexto(finalTranscript);
+        }
       };
 
+      // Esta función se llama continuamente mientras hablas
       recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript.trim()) {
-          transcriptionBox.innerHTML = `<p><i>"${transcript}"</i></p>`;
-          analizarTexto(transcript);
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
         }
+        // Muestra el feedback visual de lo que se está escuchando
+        transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
       };
 
       recognition.onerror = (event) => {
         console.error('SpeechRecognition error:', event.error);
-        statusBox.textContent = `Error de micrófono: ${event.error}. Asegúrate de dar permisos y usar HTTPS.`;
-        isRecording = false;
+        statusBox.textContent = `Error de micrófono: ${event.error}. Asegúrate de dar permisos.`;
       };
 
+      // --- Lógica del Botón de Micrófono ---
       talkButton.addEventListener('click', () => {
         if (isRecording) {
+          // Si está grabando, la detenemos. onend() se encargará de analizar el texto.
           recognition.stop();
         } else {
+          // Si no está grabando, reseteamos todo y empezamos.
           resetState();
           try {
             recognition.start();
@@ -286,15 +132,23 @@
       });
     }
 
-    // --------- IA + Google Sheets backend ---------
+    // --- Funciones de Interacción con el Backend ---
+    
+    // ===== CAMBIO CLAVE: URLs CORRECTAS USANDO DJANGO =====
+    const ANALIZAR_URL = "{% url 'interfaz:analizar' %}";
+    const REGISTRAR_URL = "{% url 'interfaz:registrar' %}";
+    const CREAR_CATEGORIA_URL = "{% url 'interfaz:crear_categoria' %}";
+    const CREAR_CUENTA_URL = "{% url 'interfaz:crear_cuenta' %}";
+    // =======================================================
+
     async function analizarTexto(texto) {
       statusBox.textContent = 'Analizando con IA...';
       talkButton.disabled = true;
 
       try {
-        const response = await fetch('/analizar/', {
+        const response = await fetch(ANALIZAR_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
           body: JSON.stringify({ texto })
         });
         const result = await response.json();
@@ -307,31 +161,19 @@
     }
 
     function populateAndShowForm(data) {
+      // ... (esta función no cambia)
       const { datos_extraidos, todas_las_categorias, todas_las_cuentas } = data;
       statusBox.textContent = '';
-
       if (tomSelectCategoria) tomSelectCategoria.destroy();
       if (tomSelectCuenta) tomSelectCuenta.destroy();
-
       document.getElementById('input-fecha').value = datos_extraidos.fecha || '';
       document.getElementById('input-descripcion').value = datos_extraidos.descripcion || '';
       document.getElementById('input-egresos').value = datos_extraidos.egresos || 0;
       document.getElementById('input-ingresos').value = datos_extraidos.ingresos || 0;
-
-      tomSelectCategoria = new TomSelect('#select-categoria', {
-        options: todas_las_categorias.map(c => ({ value: c, text: c })),
-        create: false,
-        searchField: 'text'
-      });
+      tomSelectCategoria = new TomSelect('#select-categoria', { options: todas_las_categorias.map(c => ({ value: c, text: c })), create: false, searchField: 'text' });
       tomSelectCategoria.addItem(datos_extraidos.categoria, true);
-
-      tomSelectCuenta = new TomSelect('#select-cuenta', {
-        options: todas_las_cuentas.map(c => ({ value: c, text: c })),
-        create: false,
-        searchField: 'text'
-      });
+      tomSelectCuenta = new TomSelect('#select-cuenta', { options: todas_las_cuentas.map(c => ({ value: c, text: c })), create: false, searchField: 'text' });
       tomSelectCuenta.addItem(datos_extraidos.cuenta, true);
-
       instructionText.textContent = 'Verifica y corrige la información.';
       talkButton.classList.add('hidden');
       formContainer.classList.remove('hidden');
@@ -341,11 +183,12 @@
       const nombre = window.prompt(`Introduce el nombre para la nueva ${tipo}:`);
       if (!nombre || !nombre.trim()) return;
 
+      const url = tipo === 'categoria' ? CREAR_CATEGORIA_URL : CREAR_CUENTA_URL;
       statusBox.textContent = `Creando nueva ${tipo}...`;
       try {
-        const response = await fetch(`/crear/${tipo}/`, {
+        const response = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
           body: JSON.stringify({ nombre })
         });
         const result = await response.json();
@@ -373,9 +216,9 @@
       };
 
       try {
-        const response = await fetch('/registrar/', {
+        const response = await fetch(REGISTRAR_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
           body: JSON.stringify({ datos })
         });
         const result = await response.json();
@@ -393,14 +236,13 @@
       formContainer.classList.add('hidden');
       talkButton.classList.remove('hidden');
       talkButton.disabled = false;
-      isRecording = false;
       instructionText.textContent = 'Presiona el micrófono para hablar.';
       statusBox.textContent = '';
       transcriptionBox.innerHTML = '';
+      document.getElementById('formContainer').reset();
     }
 
     acceptButton.addEventListener('click', registrarDatos);
     cancelButton.addEventListener('click', resetState);
-  </script>
-</body>
-</html>
+</script>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Agregar Tarea por Voz{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center px-4">
+    <header class="w-full max-w-md text-center mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Gestor de <span class="text-cyan-400">Tareas</span>
+        </h1>
+        <a href="{% url 'gestor_tareas:lista_tareas' %}" class="text-cyan-400 hover:text-cyan-300 mt-2 inline-block">← Volver a la lista</a>
+    </header>
+
+    <main class="w-full max-w-md space-y-6">
+        <section id="interactionContainer" class="w-full bg-slate-800/60 backdrop-blur rounded-2xl shadow-2xl p-6">
+            <p id="instructionText" class="text-center text-base sm:text-lg text-cyan-400 mb-6">
+                Presiona para dictar una nueva tarea.
+            </p>
+            <button id="talkButton" class="mx-auto flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-cyan-600 hover:bg-cyan-700 transition-all focus:outline-none focus:ring-4 focus:ring-cyan-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-10 h-10"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" /><path fill-rule="evenodd" d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-4a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z" clip-rule="evenodd" /></svg>
+            </button>
+
+            <!-- Formulario dinámico -->
+            <form id="formContainer" class="hidden mt-8 space-y-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label for="input-cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label><input type="text" id="input-cliente" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                    <div><label for="input-telefono" class="block mb-1 text-slate-400 font-medium">Teléfono (Opcional)</label><input type="tel" id="input-telefono" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                    <div class="sm:col-span-2"><label for="select-tipo" class="block mb-1 text-slate-400 font-medium">Tipo de Trabajo</label><div class="flex items-center gap-2"><select id="select-tipo" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" onclick="crearNuevoItem('tipo')" class="bg-cyan-600 hover:bg-cyan-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
+                    <div><label for="select-prioridad" class="block mb-1 text-slate-400 font-medium">Prioridad</label><select id="select-prioridad" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"></select></div>
+                    <div><label for="select-estado" class="block mb-1 text-slate-400 font-medium">Estado</label><select id="select-estado" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"></select></div>
+                    <div class="sm:col-span-2"><label for="input-descripcion" class="block mb-1 text-slate-400 font-medium">Descripción</label><textarea id="input-descripcion" rows="3" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"></textarea></div>
+                    <input type="hidden" id="input-fecha_recibido"/>
+                </div>
+                <div class="flex justify-center gap-4 pt-4"><button type="button" id="acceptButton" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg font-semibold">Guardar Tarea</button><button type="button" id="cancelButton" class="bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg font-semibold">Cancelar</button></div>
+            </form>
+        </section>
+
+        <div id="statusBox" class="min-h-[1.75rem] text-center text-sm font-medium text-slate-400"></div>
+        <div id="transcriptionBox" class="bg-slate-800/40 rounded-lg p-3 text-xs text-slate-400 italic"></div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // --- Referencias a elementos de la UI ---
+    const talkButton = document.getElementById('talkButton');
+    const formContainer = document.getElementById('formContainer');
+    const instructionText = document.getElementById('instructionText');
+    const statusBox = document.getElementById('statusBox');
+    const transcriptionBox = document.getElementById('transcriptionBox');
+    const acceptButton = document.getElementById('acceptButton');
+    const cancelButton = document.getElementById('cancelButton');
+    let tomSelectTipo;
+
+    // --- Variables de estado para la grabación ---
+    let isRecording = false;
+    let finalTranscript = ''; // Almacena el texto completo de la grabación
+
+    // --- Configuración de la API de Voz ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      statusBox.textContent = 'Tu navegador no soporta la API de voz.';
+      talkButton.disabled = true;
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      
+      // ===== CONFIGURACIÓN PARA ESCUCHA CONTINUA =====
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      // ===============================================
+
+      recognition.onstart = () => {
+        isRecording = true;
+        finalTranscript = ''; // Limpia la transcripción anterior
+        talkButton.classList.add('pulse', 'bg-red-600');
+        talkButton.classList.remove('bg-cyan-600');
+        instructionText.textContent = 'Escuchando... presiona para parar.';
+        statusBox.textContent = '';
+        transcriptionBox.innerHTML = '';
+      };
+
+      recognition.onend = () => {
+        isRecording = false;
+        talkButton.classList.remove('pulse', 'bg-red-600');
+        talkButton.classList.add('bg-cyan-600');
+        instructionText.textContent = 'Presiona para dictar una nueva tarea.';
+        // Solo analiza si hay texto y no se ha mostrado ya el formulario
+        if (finalTranscript.trim() && formContainer.classList.contains('hidden')) {
+          analizarTexto(finalTranscript);
+        }
+      };
+
+      // Esta función se llama continuamente mientras hablas
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        // Muestra el feedback visual de lo que se está escuchando
+        transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
+      };
+
+      recognition.onerror = (event) => {
+        console.error('SpeechRecognition error:', event.error);
+        statusBox.textContent = `Error de micrófono: ${event.error}. Asegúrate de dar permisos.`;
+      };
+
+      // --- Lógica del Botón de Micrófono ---
+      talkButton.addEventListener('click', () => {
+        if (isRecording) {
+          // Si está grabando, la detenemos. onend() se encargará de analizar el texto.
+          recognition.stop();
+        } else {
+          // Si no está grabando, reseteamos todo y empezamos.
+          resetState();
+          try {
+            recognition.start();
+          } catch (e) {
+            console.error('Error al iniciar reconocimiento:', e);
+            statusBox.textContent = 'No se pudo iniciar el micrófono.';
+          }
+        }
+      });
+    }
+
+    // --- Funciones de Interacción con el Backend ---
+    
+    // ===== URLs CORRECTAS USANDO DJANGO =====
+    const ANALIZAR_TAREA_URL = "{% url 'gestor_tareas:analizar_tarea' %}";
+    const REGISTRAR_TAREA_URL = "{% url 'gestor_tareas:registrar_tarea' %}";
+    const CREAR_TIPO_URL = "{% url 'gestor_tareas:crear_tipo' %}";
+    // ==========================================
+
+    async function analizarTexto(texto) {
+      statusBox.textContent = 'Analizando con IA...';
+      talkButton.disabled = true;
+
+      try {
+        const response = await fetch(ANALIZAR_TAREA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+          body: JSON.stringify({ texto })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+        populateAndShowForm(result);
+      } catch (err) {
+        statusBox.textContent = `❌ Error: ${err.message}`;
+        resetState();
+      }
+    }
+
+    function populateAndShowForm(data) {
+        const { datos_extraidos, todos_los_tipos, todas_las_prioridades, todos_los_estados } = data;
+        statusBox.textContent = '';
+        
+        if (tomSelectTipo) tomSelectTipo.destroy();
+
+        document.getElementById('input-cliente').value = datos_extraidos.cliente || '';
+        document.getElementById('input-telefono').value = datos_extraidos.telefono || '';
+        document.getElementById('input-descripcion').value = datos_extraidos.descripcion || '';
+        document.getElementById('input-fecha_recibido').value = new Date().toISOString().split('T')[0];
+
+        populateSelect('select-prioridad', todas_las_prioridades, datos_extraidos.prioridad);
+        populateSelect('select-estado', todos_los_estados, 'Recibido');
+
+        tomSelectTipo = new TomSelect('#select-tipo', {
+            options: todos_los_tipos.map(t => ({ value: t, text: t })),
+            create: false,
+            searchField: 'text'
+        });
+        tomSelectTipo.addItem(datos_extraidos.tipo, true);
+
+        instructionText.textContent = 'Verifica y corrige la información.';
+        talkButton.classList.add('hidden');
+        formContainer.classList.remove('hidden');
+    }
+
+    function populateSelect(selectId, options, selectedValue) {
+        const select = document.getElementById(selectId);
+        select.innerHTML = '';
+        options.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt;
+            optionEl.textContent = opt;
+            if (opt === selectedValue) optionEl.selected = true;
+            select.appendChild(optionEl);
+        });
+    }
+
+    async function crearNuevoItem(tipo) {
+        const nombre = window.prompt(`Introduce el nombre para el nuevo ${tipo} de trabajo:`);
+        if (!nombre || !nombre.trim()) return;
+
+        statusBox.textContent = `Creando nuevo tipo...`;
+        try {
+            const response = await fetch(CREAR_TIPO_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ nombre })
+            });
+            const result = await response.json();
+            if (result.status !== 'success') throw new Error(result.message || 'Error desconocido');
+            
+            statusBox.textContent = `¡'${result.nuevo_valor}' creado!`;
+            tomSelectTipo.clearOptions();
+            result.nuevas_opciones.forEach(o => tomSelectTipo.addOption({ value: o, text: o }));
+            tomSelectTipo.addItem(result.nuevo_valor);
+        } catch (err) {
+            statusBox.textContent = `❌ Error al crear: ${err.message}`;
+        }
+    }
+
+    async function registrarDatos() {
+        statusBox.textContent = 'Guardando en la base de datos...';
+        const datos = {
+            fecha_recibido: document.getElementById('input-fecha_recibido').value,
+            cliente: document.getElementById('input-cliente').value,
+            telefono: document.getElementById('input-telefono').value,
+            descripcion: document.getElementById('input-descripcion').value,
+            prioridad: document.getElementById('select-prioridad').value,
+            estado: document.getElementById('select-estado').value,
+            tipo: tomSelectTipo.getValue()
+        };
+
+        try {
+            const response = await fetch(REGISTRAR_TAREA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ datos })
+            });
+            const result = await response.json();
+            if (result.error) throw new Error(result.error);
+            statusBox.textContent = `✅ ¡Éxito! Redirigiendo a la lista...`;
+            setTimeout(() => window.location.href = "{% url 'gestor_tareas:lista_tareas' %}", 1500);
+        } catch (err) {
+            statusBox.textContent = `❌ Error al guardar: ${err.message}`;
+        }
+    }
+
+    function resetState() {
+        if (tomSelectTipo) tomSelectTipo.destroy();
+        formContainer.classList.add('hidden');
+        formContainer.reset();
+        talkButton.classList.remove('hidden');
+        talkButton.disabled = false;
+        instructionText.textContent = 'Presiona para dictar una nueva tarea.';
+        statusBox.textContent = '';
+        transcriptionBox.innerHTML = '';
+    }
+    
+    acceptButton.addEventListener('click', registrarDatos);
+    cancelButton.addEventListener('click', resetState);
+</script>
+{% endblock %}

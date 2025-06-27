@@ -2,6 +2,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'interfaz' # <-- AÑADIR ESTA LÍNEA
+
 urlpatterns = [
     path('', views.home, name='home'),
     path('analizar/', views.analizar_texto, name='analizar'),
