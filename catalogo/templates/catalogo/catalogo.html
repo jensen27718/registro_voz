@@ -11,10 +11,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'catalogo/style.css' %}">
     <link rel="stylesheet" href="{% static 'catalogo/brand.css' %}">
+
 <script>
  window.INITIAL_DATA = {{ initial_data|safe }};
  window.WHATSAPP_NUMBER = "{{ whatsapp_number }}";
 </script>
+
 </head>
 <body class="bg-gray-50 text-gray-800 font-['Manrope']">
 <div id="app" class="container mx-auto p-4 max-w-4xl">
@@ -38,10 +40,13 @@
                         <input type="text" id="name" class="w-full text-xl p-4 border border-gray-300 rounded-lg">
                     </div>
                     <div>
+
                         <label for="city" class="block text-lg font-bold mb-2">Ciudad:</label>
                         <input type="text" id="city" class="w-full text-xl p-4 border border-gray-300 rounded-lg">
                         <label for="address" class="block text-lg font-bold mb-2">Dirección de Envío:</label>
                         <input type="text" id="address" class="w-full text-xl p-4 border border-gray-300 rounded-lg">
+
+
                     </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white text-2xl font-bold py-4 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Ingresar</button>

@@ -1,3 +1,4 @@
+
 import json
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import render
@@ -12,6 +13,7 @@ WHATSAPP_NUMBER = '573001234567'
 
 def build_catalog_data():
     return {
+
         'tiposProducto': [
             {
                 'id': tp.id,
@@ -56,6 +58,7 @@ def build_catalog_data():
             }
             for v in ValorAtributo.objects.all()
         ],
+
         'variacionesProducto': [
             {
                 'id': v.id,
@@ -115,3 +118,4 @@ def cliente_create(request):
         'address': cliente.direccion,
         'city': cliente.ciudad,
     })
+
