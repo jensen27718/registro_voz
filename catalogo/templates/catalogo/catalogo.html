@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Stickers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'catalogo/style.css' %}">
+    <link rel="stylesheet" href="{% static 'catalogo/brand.css' %}">
+<script>
+ window.INITIAL_DATA = {{ initial_data|safe }};
+ window.WHATSAPP_NUMBER = "{{ whatsapp_number }}";
+</script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-['Manrope']">
+<div id="app" class="container mx-auto p-4 max-w-4xl">
+<header class="flex justify-between items-center mb-8 pb-4 border-b">
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">StickerShop</h1>
+    <button id="cart-toggle-btn" class="relative">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span id="cart-count" class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center transition-transform duration-300">0</span>
+    </button>
+</header>
+<main id="main-content">
+    <div id="login-page" class="page">
+        <h2 class="text-2xl font-bold mb-6 text-center">Bienvenido/a</h2>
+        <div class="bg-white p-8 rounded-xl shadow-md max-w-md mx-auto">
+            <form id="login-form">
+                <label for="phone" class="block text-lg font-bold mb-2">Tu número de teléfono:</label>
+                <input type="tel" id="phone" placeholder="Ej: 3001234567" class="w-full text-xl p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-6" required>
+                <div id="registration-fields" class="hidden space-y-4 mb-6">
+                    <div>
+                        <label for="name" class="block text-lg font-bold mb-2">Nombre Completo:</label>
+                        <input type="text" id="name" class="w-full text-xl p-4 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="address" class="block text-lg font-bold mb-2">Dirección de Envío:</label>
+                        <input type="text" id="address" class="w-full text-xl p-4 border border-gray-300 rounded-lg">
+                        <label for="city" class="block text-lg font-bold mb-2">Ciudad:</label>
+                        <input type="text" id="city" class="w-full text-xl p-4 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white text-2xl font-bold py-4 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Ingresar</button>
+            </form>
+        </div>
+    </div>
+    <div id="categories-page" class="page hidden">
+        <h2 class="text-2xl font-bold mb-6">Explora nuestras categorías</h2>
+        <div id="categories-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6"></div>
+    </div>
+    <div id="products-page" class="page hidden">
+        <button id="back-to-categories" class="mb-6 text-blue-600 font-bold text-lg hover:underline">← Volver a Categorías</button>
+        <h2 id="products-title" class="text-2xl font-bold mb-6"></h2>
+        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6"></div>
+    </div>
+</main>
+<aside id="cart-sidebar" class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
+    <div class="flex justify-between items-center p-6 border-b">
+        <h2 class="text-2xl font-bold">Tu Carrito</h2>
+        <button id="close-cart-btn" class="text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+    </div>
+    <div id="cart-items" class="p-6 flex-grow overflow-y-auto"></div>
+    <div class="p-6 border-t bg-gray-50">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-xl font-bold">Total:</span>
+            <span id="cart-total" class="text-2xl font-extrabold text-gray-900">$0</span>
+        </div>
+        <button id="checkout-btn" class="w-full bg-green-500 text-white text-xl font-bold py-4 rounded-lg shadow-lg hover:bg-green-600 transition-colors mb-3">Pedir por WhatsApp</button>
+        <button id="clear-cart-btn" class="w-full text-red-600 font-bold py-2 rounded-lg hover:bg-red-100 transition-colors">Vaciar Carrito</button>
+    </div>
+</aside>
+</div>
+<div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-60 hidden z-40"></div>
+<div id="product-modal" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-6 transform translate-y-full transition-transform duration-300 ease-in-out z-50 max-h-[85vh] flex flex-col">
+    <div class="flex-shrink-0 mb-4">
+        <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
+        <div class="flex gap-4 items-start">
+            <img id="modal-product-img" src="" alt="" class="w-24 h-24 rounded-lg object-cover shadow-sm">
+            <h2 id="modal-product-name" class="text-2xl font-bold flex-grow"></h2>
+        </div>
+    </div>
+    <div class="flex-grow overflow-y-auto space-y-6 pb-24">
+        <div>
+            <h3 class="text-xl font-bold mb-3">1. ¿Cuántos quieres?</h3>
+            <div class="flex items-center justify-center gap-4 bg-gray-100 p-2 rounded-xl">
+                <button id="modal-quantity-minus" class="w-14 h-14 text-4xl font-bold text-blue-600 rounded-lg">-</button>
+                <span id="modal-quantity-value" class="text-4xl font-extrabold w-20 text-center">1</span>
+                <button id="modal-quantity-plus" class="w-14 h-14 text-4xl font-bold text-blue-600 rounded-lg">+</button>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold mb-3">2. Elige el Tamaño:</h3>
+            <div id="modal-product-sizes" class="flex flex-wrap gap-3"></div>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold mb-3">3. Elige el Color:</h3>
+            <div id="modal-product-colors" class="flex flex-wrap gap-3"></div>
+        </div>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
+        <button id="modal-add-to-cart-btn" class="w-full bg-blue-600 text-white text-xl font-bold py-4 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed">Selecciona tamaño y color</button>
+    </div>
+</div>
+<div id="confirmation-toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-lg py-3 px-6 rounded-full shadow-lg opacity-0 transform translate-y-10 transition-all duration-300 ease-in-out z-50">¡Añadido al carrito!</div>
+<script src="{% static 'catalogo/script.js' %}"></script>
+</body>
+</html>
