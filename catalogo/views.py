@@ -1,3 +1,4 @@
+
 import json
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import render
@@ -76,3 +77,4 @@ def cliente_create(request):
         'address': cliente.direccion,
         'city': cliente.ciudad,
     })
+
