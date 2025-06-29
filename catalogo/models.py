@@ -4,7 +4,7 @@ from django.utils import timezone
 
 class Cliente(models.Model):
     """Información del cliente que realiza pedidos."""
-    telefono = models.CharField(primary_key=True, max_length=20)
+    telefono = models.CharField(max_length=20, db_index=True)
     nombre = models.CharField(max_length=150)
     direccion = models.CharField(max_length=255, blank=True)
     ciudad = models.CharField(max_length=100, blank=True)

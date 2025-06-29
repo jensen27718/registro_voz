@@ -95,6 +95,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const { productoId, selectedAtributos } = state.modalSelection;
 
         const variacionesDisponibles = DATA.variacionesProducto.filter(v => v.productoId === productoId);
+        const allOptions = modalProductAttributesContainer.querySelectorAll('[data-valor-id]');
+        allOptions.forEach(opt => {
+            const defId = Number(opt.dataset.atributoDefId);
+            const valId = Number(opt.dataset.valorId);
+            const match = variacionesDisponibles.some(v => {
+                if (!v.valorAtributoIds.includes(valId)) return false;
+                return Object.entries(selectedAtributos).every(([d, vId]) => {
+                    if (Number(d) === defId) return true;
+                    return v.valorAtributoIds.includes(vId);
+                });
+            });
+            opt.classList.toggle('opacity-30', !match);
+            opt.classList.toggle('pointer-events-none', !match);
+        });
         const totalAtributosRequeridos = [...new Set(variacionesDisponibles.flatMap(v => v.valorAtributoIds).map(valId => DATA.valorAtributos.find(v => v.id === valId).atributoDefId))].length;
 
         let variation = null;
