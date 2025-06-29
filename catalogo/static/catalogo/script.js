@@ -22,10 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const listingPage = document.getElementById('categories-page');
     const listingGrid = document.getElementById('categories-grid');
     const listingTitle = listingPage.querySelector('h2');
+    const breadcrumb = document.getElementById('breadcrumb');
     const productsPage = document.getElementById('products-page');
     const productsGrid = document.getElementById('products-grid');
     const productsTitle = document.getElementById('products-title');
     const backToCategoriesBtn = document.getElementById('back-to-categories');
+    const backToTypesBtn = document.getElementById('back-to-types');
     const cartToggleBtn = document.getElementById('cart-toggle-btn');
     const closeCartBtn = document.getElementById('close-cart-btn');
     const cartSidebar = document.getElementById('cart-sidebar');
@@ -189,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="quantity-change text-lg font-bold p-2" data-change="-1">-</button>
                         <span class="font-bold w-8 text-center">${item.quantity}</span>
                         <button class="quantity-change text-lg font-bold p-2" data-change="1">+</button>
+                        <button class="remove-item text-red-600 font-bold p-2">x</button>
                     </div>
                 </div>`;
             }).join('');
@@ -260,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCart();
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (!state.currentUser) { alert("Por favor, inicia sesión para continuar."); toggleCart(false); showPage('login-page'); return; }
         let message = `¡Hola! 👋 Quisiera hacer el siguiente pedido:\n\n`;
         const { items, appliedPromoCode } = state.cart;
@@ -284,8 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         message += `*TOTAL DEL PEDIDO: $${total.toLocaleString('es-CO')}*\n\n`;
         message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
+        await fetch('/catalogo/api/pedido/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ cliente: state.currentUser, items })
+        });
         const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-        console.log("Pedido Creado (Estado: PENDIENTE):", { user: state.currentUser, cart: state.cart, total, date: new Date().toISOString() });
         window.open(whatsappUrl, '_blank');
         state.cart = { items: [], appliedPromoCode: null };
         localStorage.removeItem('cart');
@@ -297,7 +304,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const showPage = (pageId) => { pages.forEach(page => page.classList.add('hidden')); document.getElementById(pageId).classList.remove('hidden'); window.scrollTo(0, 0); };
     const navigateTo = (view, contextId = null) => { state.navigationStack.push({ view, contextId }); renderCurrentView(); };
     const navigateBack = () => { if (state.navigationStack.length > 1) { state.navigationStack.pop(); renderCurrentView(); } };
-    const renderCurrentView = () => { const { view, contextId } = state.navigationStack[state.navigationStack.length - 1]; backToCategoriesBtn.style.display = state.navigationStack.length > 2 ? 'block' : 'none'; switch(view) { case 'tiposProducto': renderTiposProducto(); break; case 'categorias': renderCategorias(contextId); break; case 'productos': renderProducts(contextId); break; } };
+    const updateBreadcrumb = () => {
+        if (state.navigationStack.length <= 1) { breadcrumb.classList.add('hidden'); return; }
+        const parts = state.navigationStack.map(({view, contextId}, idx) => {
+            if(view === 'tiposProducto') return 'Tipos';
+            if(view === 'categorias') { const tipo = DATA.tiposProducto.find(t => t.id === contextId); return tipo ? tipo.nombre : ''; }
+            if(view === 'productos') { const cat = DATA.categorias.find(c => c.id === contextId); return cat ? cat.nombre : ''; }
+            return '';
+        });
+        breadcrumb.textContent = parts.join(' / ');
+        breadcrumb.classList.remove('hidden');
+    };
+    const renderCurrentView = () => {
+        const { view, contextId } = state.navigationStack[state.navigationStack.length - 1];
+        backToCategoriesBtn.style.display = state.navigationStack.length > 2 ? 'block' : 'none';
+        backToTypesBtn.style.display = state.navigationStack.length > 1 ? 'block' : 'none';
+        switch(view) {
+            case 'tiposProducto':
+                renderTiposProducto();
+                break;
+            case 'categorias':
+                renderCategorias(contextId);
+                break;
+            case 'productos':
+                renderProducts(contextId);
+                break;
+        }
+        updateBreadcrumb();
+    };
 
     const renderTiposProducto = () => {
         listingTitle.textContent = "Explora nuestras Familias de Productos";
@@ -342,7 +376,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const changeQuantity = (variationId, change) => { const item = state.cart.items.find(i => i.variationId === variationId); if (item) { item.quantity += change; if (item.quantity <= 0) { state.cart.items = state.cart.items.filter(i => i.variationId !== variationId); } } localStorage.setItem('cart', JSON.stringify(state.cart)); renderCart(); };
+    const changeQuantity = (variationId, change) => {
+        const item = state.cart.items.find(i => i.variationId === variationId);
+        if (item) {
+            item.quantity += change;
+            if (item.quantity <= 0) {
+                state.cart.items = state.cart.items.filter(i => i.variationId !== variationId);
+            }
+        }
+        localStorage.setItem('cart', JSON.stringify(state.cart));
+        renderCart();
+    };
     const clearCart = () => { if(confirm('¿Vaciar el carrito?')) { state.cart = { items: [], appliedPromoCode: null }; localStorage.removeItem('cart'); renderCart(); } };
     const toggleCart = (forceOpen = null) => { const isOpen = !cartSidebar.classList.contains('translate-x-full'); if (forceOpen === true || (forceOpen === null && !isOpen)) { cartSidebar.classList.remove('translate-x-full'); } else { cartSidebar.classList.add('translate-x-full'); closeModal(); } };
     const closeModal = () => { modalOverlay.classList.add('hidden'); productModal.classList.add('translate-y-full'); };
@@ -350,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loginForm.addEventListener('submit', handleLogin);
     backToCategoriesBtn.addEventListener('click', navigateBack);
+    backToTypesBtn.addEventListener('click', navigateBack);
     listingGrid.addEventListener('click', (e) => { const card = e.target.closest('.category-card'); if (card) navigateTo(card.dataset.view, Number(card.dataset.id)); });
     productsGrid.addEventListener('click', (e) => { const card = e.target.closest('.product-card'); if (card) openProductModal(Number(card.dataset.productId)); });
     modalOverlay.addEventListener('click', closeModal);
@@ -361,7 +406,14 @@ document.addEventListener('DOMContentLoaded', () => {
     closeCartBtn.addEventListener('click', () => toggleCart(false));
     clearCartBtn.addEventListener('click', clearCart);
     checkoutBtn.addEventListener('click', handleCheckout);
-    cartItemsContainer.addEventListener('click', e => { if (e.target.classList.contains('quantity-change')) { changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), Number(e.target.dataset.change)); } });
+    cartItemsContainer.addEventListener('click', e => {
+        if (e.target.classList.contains('quantity-change')) {
+            changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), Number(e.target.dataset.change));
+        }
+        if (e.target.classList.contains('remove-item')) {
+            changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), -Number.MAX_SAFE_INTEGER);
+        }
+    });
     cartFooter.addEventListener('click', e => { if (e.target.id === 'apply-promo-btn') applyPromo(); if (e.target.id === 'remove-promo-btn') removePromo(); });
 
     const init = () => {
@@ -379,6 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showPage('login-page');
         renderCart();
+        updateBreadcrumb();
     };
     init();
 });
