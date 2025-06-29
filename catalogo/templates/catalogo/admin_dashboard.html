@@ -10,6 +10,7 @@
     <li><a href="{% url 'catalogo:admin_dashboard' %}?section=producto" class="pb-2 {% if section == 'producto' %}font-bold border-b-2 border-blue-500{% endif %}">Productos</a></li>
     <li><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="pb-2 {% if section == 'variacion' %}font-bold border-b-2 border-blue-500{% endif %}">Variaciones</a></li>
     <li><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="pb-2 {% if section == 'cliente' %}font-bold border-b-2 border-blue-500{% endif %}">Clientes</a></li>
+
   </ul>
 </nav>
 <div class="space-y-8">
@@ -100,6 +101,7 @@
       {% endfor %}
     </tbody>
   </table>
+
   {% endif %}
 </div>
 {% endblock %}
