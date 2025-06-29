@@ -86,9 +86,8 @@ def cliente_detail(request):
     phone = request.GET.get('phone')
     if not phone:
         return HttpResponseBadRequest('phone required')
-    try:
-        cliente = Cliente.objects.get(telefono=phone)
-    except Cliente.DoesNotExist:
+    cliente = Cliente.objects.filter(telefono=phone).order_by('-id').first()
+    if not cliente:
         return HttpResponseNotFound()
     return JsonResponse({
         'phone': cliente.telefono,
@@ -107,11 +106,12 @@ def cliente_create(request):
     phone = payload.get('phone', '').strip()
     if not phone:
         return HttpResponseBadRequest('phone required')
-    cliente, _ = Cliente.objects.get_or_create(telefono=phone)
-    cliente.nombre = payload.get('name', cliente.nombre)
-    cliente.direccion = payload.get('address', cliente.direccion)
-    cliente.ciudad = payload.get('city', cliente.ciudad)
-    cliente.save()
+    cliente = Cliente.objects.create(
+        telefono=phone,
+        nombre=payload.get('name', ''),
+        direccion=payload.get('address', ''),
+        ciudad=payload.get('city', ''),
+    )
     return JsonResponse({
         'phone': cliente.telefono,
         'name': cliente.nombre,
