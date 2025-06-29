@@ -2,11 +2,21 @@
 {% extends 'catalogo/admin_base.html' %}
 {% block title %}Administración{% endblock %}
 {% block content %}
+<nav class="mb-6 border-b">
+  <ul class="flex gap-4">
+    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=pedidos" class="pb-2 {% if section == 'pedidos' %}font-bold border-b-2 border-blue-500{% endif %}">Pedidos</a></li>
+    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=tipo" class="pb-2 {% if section == 'tipo' %}font-bold border-b-2 border-blue-500{% endif %}">Tipos</a></li>
+    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="pb-2 {% if section == 'categoria' %}font-bold border-b-2 border-blue-500{% endif %}">Categorías</a></li>
+    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=producto" class="pb-2 {% if section == 'producto' %}font-bold border-b-2 border-blue-500{% endif %}">Productos</a></li>
+    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="pb-2 {% if section == 'variacion' %}font-bold border-b-2 border-blue-500{% endif %}">Variaciones</a></li>
+  </ul>
+</nav>
 <div class="space-y-8">
+  {% if section == 'pedidos' %}
   <h1 class="text-2xl font-bold">Pedidos</h1>
   <table class="min-w-full bg-white text-black rounded shadow">
 
-    <thead><tr><th>ID</th><th>Cliente</th><th>Estado</th><th>Cambiar</th></tr></thead>
+    <thead><tr><th>ID</th><th>Cliente</th><th>Estado</th><th>Cambiar</th><th>Detalles</th></tr></thead>
     <tbody>
       {% for p in pedidos %}
       <tr class="border-b">
@@ -28,54 +38,50 @@
 
           </form>
         </td>
+        <td><button class="toggle-items text-blue-600" data-pedido="{{ p.id }}">Ver</button></td>
+      </tr>
+      <tr class="hidden bg-gray-50" id="pedido-items-{{ p.id }}">
+        <td colspan="5">
+          <ul class="pl-4 list-disc">
+            {% for item in p.items.all %}
+            <li>{{ item.cantidad }} x {{ item.variacion.producto.nombre }} ({{ item.variacion.id }})</li>
+            {% endfor %}
+          </ul>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <h2 class="text-xl font-bold mt-8">Agregar Contenido</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-    <div class="bg-white p-4 rounded shadow space-y-2">
-
-      <h3 class="font-semibold">Tipo de Producto</h3>
-      <form method="post" class="space-y-2">
-        {% csrf_token %}
-        {{ tipo_form.as_p }}
-        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-      </form>
-    </div>
-
-    <div class="bg-white p-4 rounded shadow space-y-2">
-
-      <h3 class="font-semibold">Categoria</h3>
-      <form method="post" class="space-y-2">
-        {% csrf_token %}
-        {{ categoria_form.as_p }}
-        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-      </form>
-    </div>
-
-    <div class="bg-white p-4 rounded shadow space-y-2">
-
-      <h3 class="font-semibold">Producto</h3>
-      <form method="post" class="space-y-2">
-        {% csrf_token %}
-        {{ producto_form.as_p }}
-        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-      </form>
-    </div>
-
-    <div class="bg-white p-4 rounded shadow space-y-2">
-
-      <h3 class="font-semibold">Variación</h3>
-      <form method="post" class="space-y-2">
-        {% csrf_token %}
-        {{ variacion_form.as_p }}
-        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-      </form>
-    </div>
-  </div>
+  {% elif section == 'tipo' %}
+  <h2 class="text-xl font-bold">Nuevo Tipo de Producto</h2>
+  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
+    {% csrf_token %}
+    {{ tipo_form.as_p }}
+    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+  </form>
+  {% elif section == 'categoria' %}
+  <h2 class="text-xl font-bold">Nueva Categoría</h2>
+  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
+    {% csrf_token %}
+    {{ categoria_form.as_p }}
+    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+  </form>
+  {% elif section == 'producto' %}
+  <h2 class="text-xl font-bold">Nuevo Producto</h2>
+  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
+    {% csrf_token %}
+    {{ producto_form.as_p }}
+    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+  </form>
+  {% elif section == 'variacion' %}
+  <h2 class="text-xl font-bold">Nueva Variación</h2>
+  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
+    {% csrf_token %}
+    {{ variacion_form.as_p }}
+    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+  </form>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -85,6 +91,12 @@
         if (document.querySelector('#id_var-valores')) {
             new TomSelect('#id_var-valores', { plugins: ['remove_button'] });
         }
+        document.querySelectorAll('.toggle-items').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const row = document.getElementById(`pedido-items-${btn.dataset.pedido}`);
+                row.classList.toggle('hidden');
+            });
+        });
     });
 </script>
 {% endblock %}
