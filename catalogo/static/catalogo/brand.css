@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+:root {
+  --brand-teal: #009688;
+  --brand-purple: #7E3FF2;
+  --brand-gradient: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-purple) 100%);
+  --font-brand: "Montserrat", "Inter", sans-serif;
+}
+html, body, button, input, select, textarea {
+  font-family: var(--font-brand);
+  color: #333;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, h5, h6,
+.heading-primary {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  color: var(--brand-purple);
+  letter-spacing: -0.02em;
+}
+.heading-accent {
+  color: var(--brand-teal);
+  font-weight: 600;
+}
+.text-gradient {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+a, .link {
+  color: var(--brand-purple);
+  transition: color 0.2s ease;
+}
+a:hover, .link:hover {
+  color: var(--brand-teal);
+}
+.bg-blue-600,
+.bg-blue-600:hover,
+.hover\:bg-blue-700:hover {
+  background: var(--brand-gradient) !important;
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease alternate infinite;
+  color: #fff !important;
+}
+.text-blue-600,
+.hover\:text-blue-600:hover {
+  color: var(--brand-purple) !important;
+}
+.border-blue-500,
+.hover\:border-blue-500:hover {
+  border-color: var(--brand-purple) !important;
+}
+.variation-option:hover,
+.variation-option.selected {
+  border-color: var(--brand-purple) !important;
+  color: var(--brand-purple) !important;
+}
+.variation-option.selected {
+  background: var(--brand-gradient) !important;
+  color: #fff !important;
+}
+.color-swatch.selected {
+  border-color: var(--brand-purple) !important;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--brand-purple);
+}
+#cart-count {
+  background: var(--brand-gradient);
+}
+.product-card:hover,
+.category-card:hover,
+button:hover {
+  box-shadow: 0 4px 12px rgba(126, 63, 242, 0.25);
+}
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
