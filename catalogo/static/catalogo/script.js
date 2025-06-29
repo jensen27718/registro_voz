@@ -287,11 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         message += `*TOTAL DEL PEDIDO: $${total.toLocaleString('es-CO')}*\n\n`;
         message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
-        await fetch('/catalogo/api/pedido/', {
+        const response = await fetch('/catalogo/api/pedido/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ cliente: state.currentUser, items })
+            body: JSON.stringify({ cliente: state.currentUser, items, promoCode: appliedPromoCode })
         });
+        if (!response.ok) {
+            alert('Error guardando el pedido. Inténtalo de nuevo.');
+            return;
+        }
         const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
         state.cart = { items: [], appliedPromoCode: null };

@@ -2,11 +2,14 @@
 import json
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from .forms import TipoProductoForm, CategoriaForm, ProductoForm, VariacionProductoForm
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
     AtributoDef, ValorAtributo, VariacionProducto, Promo,
+    Carrito, CarritoItem,
     Pedido, PedidoItem
 )
 
@@ -99,6 +102,7 @@ def cliente_detail(request):
     })
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def cliente_create(request):
     try:
@@ -122,6 +126,7 @@ def cliente_create(request):
     })
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def pedido_create(request):
     try:
@@ -142,22 +147,40 @@ def pedido_create(request):
         }
     )
     items = payload.get('items', [])
-    pedido = Pedido.objects.create(cliente=cliente)
+    if not items:
+        return HttpResponseBadRequest('items required')
+
+    carrito = Carrito.objects.create(cliente=cliente)
+    carrito_items = []
     for item in items:
         try:
-            variacion = VariacionProducto.objects.get(id=item['variationId'])
+            variacion = VariacionProducto.objects.get(id=item.get('variationId'))
         except VariacionProducto.DoesNotExist:
             continue
-        PedidoItem.objects.create(
-            pedido=pedido,
-            variacion=variacion,
-            cantidad=item.get('quantity', 1),
-            precio_unitario=variacion.precio_base,
+        carrito_items.append(
+            CarritoItem(
+                carrito=carrito,
+                variacion=variacion,
+                cantidad=item.get('quantity', 1),
+            )
         )
+
+    if not carrito_items:
+        carrito.delete()
+        return HttpResponseBadRequest('invalid items')
+
+    CarritoItem.objects.bulk_create(carrito_items)
+    promo_code = payload.get('promoCode')
+    if promo_code:
+        promo = Promo.objects.filter(codigo=promo_code, activo=True).first()
+        if promo:
+            carrito.promos.add(promo)
+    pedido = Pedido.crear_desde_carrito(carrito)
     return JsonResponse({'id': pedido.id})
 
 
 def admin_dashboard(request):
+    section = request.GET.get('section', 'pedidos')
     tipo_form = TipoProductoForm(prefix='tipo')
     categoria_form = CategoriaForm(prefix='cat')
     producto_form = ProductoForm(prefix='prod')
@@ -168,24 +191,29 @@ def admin_dashboard(request):
             tipo_form = TipoProductoForm(request.POST, prefix='tipo')
             if tipo_form.is_valid():
                 tipo_form.save()
-                return redirect('catalogo:admin_dashboard')
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=tipo")
         if 'cat-nombre' in request.POST:
             categoria_form = CategoriaForm(request.POST, prefix='cat')
             if categoria_form.is_valid():
                 categoria_form.save()
-                return redirect('catalogo:admin_dashboard')
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=categoria")
         if 'prod-nombre' in request.POST:
             producto_form = ProductoForm(request.POST, prefix='prod')
             if producto_form.is_valid():
                 producto_form.save()
-                return redirect('catalogo:admin_dashboard')
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=producto")
         if 'var-precio_base' in request.POST:
             variacion_form = VariacionProductoForm(request.POST, prefix='var')
             if variacion_form.is_valid():
                 variacion_form.save()
-                return redirect('catalogo:admin_dashboard')
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=variacion")
 
-    pedidos = Pedido.objects.select_related('cliente').all().order_by('-fecha')
+    pedidos = (
+        Pedido.objects.select_related('cliente')
+        .prefetch_related('items__variacion__producto')
+        .all()
+        .order_by('-fecha')
+    )
     from .models import EstadoPedido
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
@@ -194,6 +222,7 @@ def admin_dashboard(request):
         'producto_form': producto_form,
         'variacion_form': variacion_form,
         'estados': EstadoPedido.choices,
+        'section': section,
     })
 
 
