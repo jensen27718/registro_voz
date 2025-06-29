@@ -1,11 +1,13 @@
 
 import json
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
+from .forms import TipoProductoForm, CategoriaForm, ProductoForm, VariacionProductoForm
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
-    AtributoDef, ValorAtributo, VariacionProducto, Promo
+    AtributoDef, ValorAtributo, VariacionProducto, Promo,
+    Pedido, PedidoItem
 )
 
 WHATSAPP_NUMBER = '573001234567'
@@ -118,4 +120,91 @@ def cliente_create(request):
         'address': cliente.direccion,
         'city': cliente.ciudad,
     })
+
+
+@require_http_methods(["POST"])
+def pedido_create(request):
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest('invalid json')
+
+    cliente_data = payload.get('cliente')
+    if not cliente_data:
+        return HttpResponseBadRequest('cliente required')
+
+    cliente, _ = Cliente.objects.get_or_create(
+        telefono=cliente_data.get('phone'),
+        defaults={
+            'nombre': cliente_data.get('name', ''),
+            'direccion': cliente_data.get('address', ''),
+            'ciudad': cliente_data.get('city', ''),
+        }
+    )
+    items = payload.get('items', [])
+    pedido = Pedido.objects.create(cliente=cliente)
+    for item in items:
+        try:
+            variacion = VariacionProducto.objects.get(id=item['variationId'])
+        except VariacionProducto.DoesNotExist:
+            continue
+        PedidoItem.objects.create(
+            pedido=pedido,
+            variacion=variacion,
+            cantidad=item.get('quantity', 1),
+            precio_unitario=variacion.precio_base,
+        )
+    return JsonResponse({'id': pedido.id})
+
+
+def admin_dashboard(request):
+    tipo_form = TipoProductoForm(prefix='tipo')
+    categoria_form = CategoriaForm(prefix='cat')
+    producto_form = ProductoForm(prefix='prod')
+    variacion_form = VariacionProductoForm(prefix='var')
+
+    if request.method == 'POST':
+        if 'tipo-nombre' in request.POST:
+            tipo_form = TipoProductoForm(request.POST, prefix='tipo')
+            if tipo_form.is_valid():
+                tipo_form.save()
+                return redirect('catalogo:admin_dashboard')
+        if 'cat-nombre' in request.POST:
+            categoria_form = CategoriaForm(request.POST, prefix='cat')
+            if categoria_form.is_valid():
+                categoria_form.save()
+                return redirect('catalogo:admin_dashboard')
+        if 'prod-nombre' in request.POST:
+            producto_form = ProductoForm(request.POST, prefix='prod')
+            if producto_form.is_valid():
+                producto_form.save()
+                return redirect('catalogo:admin_dashboard')
+        if 'var-precio_base' in request.POST:
+            variacion_form = VariacionProductoForm(request.POST, prefix='var')
+            if variacion_form.is_valid():
+                variacion_form.save()
+                return redirect('catalogo:admin_dashboard')
+
+    pedidos = Pedido.objects.select_related('cliente').all().order_by('-fecha')
+    from .models import EstadoPedido
+    return render(request, 'catalogo/admin_dashboard.html', {
+        'pedidos': pedidos,
+        'tipo_form': tipo_form,
+        'categoria_form': categoria_form,
+        'producto_form': producto_form,
+        'variacion_form': variacion_form,
+        'estados': EstadoPedido.choices,
+    })
+
+
+@require_http_methods(["POST"])
+def actualizar_estado_pedido(request, pedido_id):
+    estado = request.POST.get('estado')
+    try:
+        pedido = Pedido.objects.get(id=pedido_id)
+        pedido.estado = estado
+        pedido.save()
+    except Pedido.DoesNotExist:
+        return HttpResponseNotFound()
+    return redirect('catalogo:admin_dashboard')
 

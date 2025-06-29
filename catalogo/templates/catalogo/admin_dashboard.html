@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Admin Catalogo{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  <h1 class="text-2xl font-bold">Pedidos</h1>
+  <table class="min-w-full bg-white text-black">
+    <thead><tr><th>ID</th><th>Cliente</th><th>Estado</th><th>Cambiar</th></tr></thead>
+    <tbody>
+      {% for p in pedidos %}
+      <tr class="border-b">
+        <td>{{ p.id }}</td>
+        <td>{{ p.cliente.nombre }} - {{ p.cliente.telefono }} - {{ p.cliente.direccion }}</td>
+        <td>{{ p.get_estado_display }}</td>
+        <td>
+          <form method="post" action="{% url 'catalogo:actualizar_estado_pedido' p.id %}">
+            {% csrf_token %}
+            <select name="estado" class="border p-1 text-sm">
+              {% for key, val in estados %}
+                <option value="{{ key }}" {% if key == p.estado %}selected{% endif %}>{{ val }}</option>
+              {% endfor %}
+            </select>
+            <button class="bg-blue-500 text-white px-2 text-sm">Guardar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="text-xl font-bold mt-8">Agregar Contenido</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <h3 class="font-semibold">Tipo de Producto</h3>
+      <form method="post" class="space-y-2">
+        {% csrf_token %}
+        {{ tipo_form.as_p }}
+        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+      </form>
+    </div>
+    <div>
+      <h3 class="font-semibold">Categoria</h3>
+      <form method="post" class="space-y-2">
+        {% csrf_token %}
+        {{ categoria_form.as_p }}
+        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+      </form>
+    </div>
+    <div>
+      <h3 class="font-semibold">Producto</h3>
+      <form method="post" class="space-y-2">
+        {% csrf_token %}
+        {{ producto_form.as_p }}
+        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+      </form>
+    </div>
+    <div>
+      <h3 class="font-semibold">Variación</h3>
+      <form method="post" class="space-y-2">
+        {% csrf_token %}
+        {{ variacion_form.as_p }}
+        <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
