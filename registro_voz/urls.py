@@ -8,10 +8,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # La app original de contabilidad (opcional, se puede mantener o quitar)
     path('contabilidad/', include('interfaz.urls')),
-    
+
     # <-- NUEVAS RUTAS PARA EL GESTOR DE TAREAS -->
     path('tareas/', include('gestor_tareas.urls')),
+    path('catalogo/', include('catalogo.urls')),
 
     # Redirigir la raíz del sitio a la lista de tareas
-    path('', RedirectView.as_view(url='/tareas/', permanent=True)),
+    path('', RedirectView.as_view(url='/catalogo/', permanent=True)),
 ]
