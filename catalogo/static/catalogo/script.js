@@ -97,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const variacionesDisponibles = DATA.variacionesProducto.filter(v => v.productoId === productoId);
         const totalAtributosRequeridos = [...new Set(variacionesDisponibles.flatMap(v => v.valorAtributoIds).map(valId => DATA.valorAtributos.find(v => v.id === valId).atributoDefId))].length;
 
-
         let variation = null;
         const selectedValorIds = Object.values(selectedAtributos);
         if (selectedValorIds.length === totalAtributosRequeridos) {
@@ -286,7 +285,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const navigateBack = () => { if (state.navigationStack.length > 1) { state.navigationStack.pop(); renderCurrentView(); } };
     const renderCurrentView = () => { const { view, contextId } = state.navigationStack[state.navigationStack.length - 1]; backToCategoriesBtn.style.display = state.navigationStack.length > 2 ? 'block' : 'none'; switch(view) { case 'tiposProducto': renderTiposProducto(); break; case 'categorias': renderCategorias(contextId); break; case 'productos': renderProducts(contextId); break; } };
 
-    const renderTiposProducto = () => { listingTitle.textContent = "Explora nuestras Familias de Productos"; listingGrid.innerHTML = DATA.tiposProducto.map(tipo => `<div class="category-card" data-view="categorias" data-id="${tipo.id}"><div class="p-6"><h3 class="text-xl font-bold text-center mb-2">${tipo.nombre}</h3><p class="text-center text-gray-600">${tipo.descripcion}</p></div></div>`).join(''); showPage('categories-page'); };
+    const renderTiposProducto = () => {
+        listingTitle.textContent = "Explora nuestras Familias de Productos";
+        listingGrid.innerHTML = DATA.tiposProducto.map(tipo => `
+            <div class="category-card" data-view="categorias" data-id="${tipo.id}">
+                ${tipo.imagen_url ? `<img src="${tipo.imagen_url}" alt="${tipo.nombre}" class="w-full h-40 object-cover">` : ''}
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-center mb-2">${tipo.nombre}</h3>
+                    <p class="text-center text-gray-600">${tipo.descripcion}</p>
+                </div>
+            </div>
+        `).join('');
+        showPage('categories-page');
+    };
+
     const renderCategorias = (tipoProductoId) => { const tipo = DATA.tiposProducto.find(t => t.id === tipoProductoId); listingTitle.textContent = `Categorías de ${tipo.nombre}`; listingGrid.innerHTML = DATA.categorias.filter(c => c.tipoProductoId === tipoProductoId).map(cat => `<div class="category-card" data-view="productos" data-id="${cat.id}"><img src="${cat.imagen_url}" alt="${cat.nombre}" class="w-full h-40 object-cover"><div class="p-4"><h3 class="text-xl font-bold text-center">${cat.nombre}</h3></div></div>`).join(''); showPage('categories-page'); };
     const renderProducts = (categoriaId) => { const cat = DATA.categorias.find(c => c.id === categoriaId); productsTitle.textContent = cat.nombre; productsGrid.innerHTML = DATA.productos.filter(p => p.categoriaId === categoriaId).map(prod => `<div class="product-card" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.nombre}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.nombre}</h4></div></div>`).join(''); showPage('products-page'); };
     const handleLogin = async (e) => {

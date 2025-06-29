@@ -13,11 +13,52 @@ WHATSAPP_NUMBER = '573001234567'
 
 def build_catalog_data():
     return {
-        'tiposProducto': list(TipoProducto.objects.values('id', 'nombre', 'descripcion')),
-        'categorias': list(Categoria.objects.values('id', 'tipo_producto_id', 'nombre', 'imagen_url')),
-        'productos': list(Producto.objects.values('id', 'categoria_id', 'nombre', 'foto_url')),
-        'atributoDefs': list(AtributoDef.objects.values('id', 'tipo_producto_id', 'nombre')),
-        'valorAtributos': list(ValorAtributo.objects.values('id', 'atributo_def_id', 'valor', 'display')),
+
+        'tiposProducto': [
+            {
+                'id': tp.id,
+                'nombre': tp.nombre,
+                'descripcion': tp.descripcion,
+                'imagen_url': tp.imagen_url,
+            }
+            for tp in TipoProducto.objects.all()
+        ],
+        'categorias': [
+            {
+                'id': c.id,
+                'tipoProductoId': c.tipo_producto_id,
+                'nombre': c.nombre,
+                'imagen_url': c.imagen_url,
+            }
+            for c in Categoria.objects.all()
+        ],
+        'productos': [
+            {
+                'id': p.id,
+                'categoriaId': p.categoria_id,
+                'nombre': p.nombre,
+                'foto_url': p.foto_url,
+            }
+            for p in Producto.objects.all()
+        ],
+        'atributoDefs': [
+            {
+                'id': a.id,
+                'tipoProductoId': a.tipo_producto_id,
+                'nombre': a.nombre,
+            }
+            for a in AtributoDef.objects.all()
+        ],
+        'valorAtributos': [
+            {
+                'id': v.id,
+                'atributoDefId': v.atributo_def_id,
+                'valor': v.valor,
+                'display': v.display,
+            }
+            for v in ValorAtributo.objects.all()
+        ],
+
         'variacionesProducto': [
             {
                 'id': v.id,
