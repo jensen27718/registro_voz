@@ -4,6 +4,7 @@ from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFou
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from .forms import TipoProductoForm, CategoriaForm, ProductoForm, VariacionProductoForm
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
@@ -100,6 +101,7 @@ def cliente_detail(request):
     })
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def cliente_create(request):
     try:
@@ -123,6 +125,7 @@ def cliente_create(request):
     })
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def pedido_create(request):
     try:
