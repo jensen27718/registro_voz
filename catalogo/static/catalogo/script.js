@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch('/catalogo/api/pedido/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ cliente: state.currentUser, items })
+            body: JSON.stringify({ cliente: state.currentUser, items, promoCode: appliedPromoCode })
         });
         if (!response.ok) {
             alert('Error guardando el pedido. Inténtalo de nuevo.');

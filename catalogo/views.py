@@ -9,6 +9,7 @@ from .forms import TipoProductoForm, CategoriaForm, ProductoForm, VariacionProdu
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
     AtributoDef, ValorAtributo, VariacionProducto, Promo,
+    Carrito, CarritoItem,
     Pedido, PedidoItem
 )
 
@@ -146,18 +147,23 @@ def pedido_create(request):
         }
     )
     items = payload.get('items', [])
-    pedido = Pedido.objects.create(cliente=cliente)
+    carrito = Carrito.objects.create(cliente=cliente)
     for item in items:
         try:
             variacion = VariacionProducto.objects.get(id=item['variationId'])
         except VariacionProducto.DoesNotExist:
             continue
-        PedidoItem.objects.create(
-            pedido=pedido,
+        CarritoItem.objects.create(
+            carrito=carrito,
             variacion=variacion,
             cantidad=item.get('quantity', 1),
-            precio_unitario=variacion.precio_base,
         )
+    promo_code = payload.get('promoCode')
+    if promo_code:
+        promo = Promo.objects.filter(codigo=promo_code, activo=True).first()
+        if promo:
+            carrito.promos.add(promo)
+    pedido = Pedido.crear_desde_carrito(carrito)
     return JsonResponse({'id': pedido.id})
 
 
@@ -190,7 +196,12 @@ def admin_dashboard(request):
                 variacion_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=variacion")
 
-    pedidos = Pedido.objects.select_related('cliente').all().order_by('-fecha')
+    pedidos = (
+        Pedido.objects.select_related('cliente')
+        .prefetch_related('items__variacion__producto')
+        .all()
+        .order_by('-fecha')
+    )
     from .models import EstadoPedido
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
