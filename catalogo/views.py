@@ -147,16 +147,19 @@ def pedido_create(request):
         }
     )
     items = payload.get('items', [])
+
     if not items:
         return HttpResponseBadRequest('items required')
 
     carrito = Carrito.objects.create(cliente=cliente)
     carrito_items = []
+
     for item in items:
         try:
             variacion = VariacionProducto.objects.get(id=item.get('variationId'))
         except VariacionProducto.DoesNotExist:
             continue
+
         carrito_items.append(
             CarritoItem(
                 carrito=carrito,
@@ -170,6 +173,7 @@ def pedido_create(request):
         return HttpResponseBadRequest('invalid items')
 
     CarritoItem.objects.bulk_create(carrito_items)
+
     promo_code = payload.get('promoCode')
     if promo_code:
         promo = Promo.objects.filter(codigo=promo_code, activo=True).first()
