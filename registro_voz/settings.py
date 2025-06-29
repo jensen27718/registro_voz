@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'interfaz', # Nuestra app
     'gestor_tareas',
+    'catalogo',
 ]
 
 MIDDLEWARE = [
