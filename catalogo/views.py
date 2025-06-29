@@ -112,12 +112,16 @@ def cliente_create(request):
     phone = payload.get('phone', '').strip()
     if not phone:
         return HttpResponseBadRequest('phone required')
-    cliente = Cliente.objects.create(
+
+    cliente, _ = Cliente.objects.get_or_create(
         telefono=phone,
-        nombre=payload.get('name', ''),
-        direccion=payload.get('address', ''),
-        ciudad=payload.get('city', ''),
+        defaults={
+            'nombre': payload.get('name', ''),
+            'direccion': payload.get('address', ''),
+            'ciudad': payload.get('city', ''),
+        }
     )
+
     return JsonResponse({
         'phone': cliente.telefono,
         'name': cliente.nombre,
@@ -218,6 +222,9 @@ def admin_dashboard(request):
         .all()
         .order_by('-fecha')
     )
+
+    clientes = Cliente.objects.all().order_by('nombre')
+
     from .models import EstadoPedido
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
@@ -225,6 +232,7 @@ def admin_dashboard(request):
         'categoria_form': categoria_form,
         'producto_form': producto_form,
         'variacion_form': variacion_form,
+        'clientes': clientes,
         'estados': EstadoPedido.choices,
         'section': section,
     })

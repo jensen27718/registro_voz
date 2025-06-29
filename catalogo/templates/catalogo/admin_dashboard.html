@@ -9,6 +9,8 @@
     <li><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="pb-2 {% if section == 'categoria' %}font-bold border-b-2 border-blue-500{% endif %}">Categorías</a></li>
     <li><a href="{% url 'catalogo:admin_dashboard' %}?section=producto" class="pb-2 {% if section == 'producto' %}font-bold border-b-2 border-blue-500{% endif %}">Productos</a></li>
     <li><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="pb-2 {% if section == 'variacion' %}font-bold border-b-2 border-blue-500{% endif %}">Variaciones</a></li>
+    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="pb-2 {% if section == 'cliente' %}font-bold border-b-2 border-blue-500{% endif %}">Clientes</a></li>
+
   </ul>
 </nav>
 <div class="space-y-8">
@@ -81,6 +83,25 @@
     {{ variacion_form.as_p }}
     <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
   </form>
+  {% elif section == 'cliente' %}
+  <h2 class="text-xl font-bold">Clientes Registrados</h2>
+  <table class="min-w-full bg-white text-black rounded shadow">
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th></tr>
+    </thead>
+    <tbody>
+      {% for c in clientes %}
+      <tr class="border-b">
+        <td>{{ c.id }}</td>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.telefono }}</td>
+        <td>{{ c.direccion }}</td>
+        <td>{{ c.ciudad }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
   {% endif %}
 </div>
 {% endblock %}
