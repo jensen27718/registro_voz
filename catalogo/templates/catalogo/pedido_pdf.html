@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pedido #{{ pedido.id }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1cm;
+        }
+        body {
+            font-family: "Helvetica", sans-serif;
+            color: #333;
+            font-size: 10pt;
+        }
+        h1 {
+            color: #1a202c;
+            font-size: 24pt;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10pt;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #4a5568;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5pt;
+            margin-top: 25pt;
+            margin-bottom: 10pt;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10pt;
+        }
+        th, td {
+            padding: 8pt 4pt;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f7fafc;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .details-box {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10pt;
+            margin-top: 10pt;
+        }
+        .total-section {
+            margin-top: 20pt;
+            float: right;
+            width: 50%;
+        }
+        .total-section td {
+            border: none;
+            padding: 4pt;
+        }
+        .company-details {
+            text-align: right;
+            color: #718096;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="company-details">
+        <strong>StickerShop</strong><br>
+        Fecha de Emisión: {% now "d/m/Y" %}
+    </div>
+
+    <h1>Recibo del Pedido #{{ pedido.id }}</h1>
+
+    <h2>Información del Cliente</h2>
+    <div class="details-box">
+        <strong>Cliente:</strong> {{ pedido.cliente.nombre }}<br>
+        <strong>Teléfono:</strong> {{ pedido.cliente.telefono }}<br>
+        <strong>Dirección:</strong> {{ pedido.cliente.direccion }}, {{ pedido.cliente.ciudad }}
+    </div>
+
+    <h2>Detalles del Pedido</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Producto y Variación</th>
+                <th class="text-right">Cantidad</th>
+                <th class="text-right">Precio Unitario</th>
+                <th class="text-right">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in pedido.items.all %}
+            <tr>
+                <td>
+                    <div class="font-bold">{{ item.variacion.producto.nombre }}</div>
+                    <div style="font-size: 8pt; color: #718096;">
+                        {% for valor in item.variacion.valores.all %}
+                            {{ valor.atributo_def.nombre }}: {{ valor.valor }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </div>
+                </td>
+                <td class="text-right">{{ item.cantidad }}</td>
+                <td class="text-right">${{ item.precio_unitario|floatformat:0 }}</td>
+                <!-- LÍNEA CORREGIDA -->
+                <td class="text-right font-bold">${{ item.subtotal|floatformat:0 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total-section">
+        <table>
+            <tr>
+                <td><strong>TOTAL A PAGAR:</strong></td>
+                <td class="text-right font-bold" style="font-size: 14pt;">${{ pedido.total|floatformat:0 }}</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

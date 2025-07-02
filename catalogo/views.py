@@ -1,24 +1,34 @@
+# catalogo/views.py
 
 import json
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+
+# --- IMPORTACIONES PARA AUTENTICACIÓN Y PDF (LÍNEA CORREGIDA) ---
+from django.contrib.admin.views.decorators import staff_member_required
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+import io
+# ---------------------------------------------
+
 from .forms import TipoProductoForm, CategoriaForm, ProductoForm, VariacionProductoForm
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
     AtributoDef, ValorAtributo, VariacionProducto, Promo,
     Carrito, CarritoItem,
-    Pedido, PedidoItem
+    Pedido, PedidoItem, EstadoPedido
 )
 
-WHATSAPP_NUMBER = '573001234567'
+WHATSAPP_NUMBER = '573212165252'
 
 
 def build_catalog_data():
+    """Construye el diccionario de datos inicial para el frontend."""
     return {
-
         'tiposProducto': [
             {
                 'id': tp.id,
@@ -78,6 +88,7 @@ def build_catalog_data():
 
 
 def catalogo_view(request):
+    """Vista principal que renderiza la aplicación de catálogo."""
     data = build_catalog_data()
     context = {
         'initial_data': json.dumps(data, default=str),
@@ -88,12 +99,13 @@ def catalogo_view(request):
 
 @require_http_methods(["GET"])
 def cliente_detail(request):
+    """Obtiene los detalles de un cliente por su número de teléfono."""
     phone = request.GET.get('phone')
     if not phone:
         return HttpResponseBadRequest('phone required')
     cliente = Cliente.objects.filter(telefono=phone).order_by('-id').first()
     if not cliente:
-        return HttpResponseNotFound()
+        return HttpResponseNotFound('Client not found')
     return JsonResponse({
         'phone': cliente.telefono,
         'name': cliente.nombre,
@@ -105,6 +117,7 @@ def cliente_detail(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def cliente_create(request):
+    """Crea un nuevo cliente o actualiza uno existente."""
     try:
         payload = json.loads(request.body)
     except json.JSONDecodeError:
@@ -113,7 +126,7 @@ def cliente_create(request):
     if not phone:
         return HttpResponseBadRequest('phone required')
 
-    cliente, _ = Cliente.objects.get_or_create(
+    cliente, _ = Cliente.objects.update_or_create(
         telefono=phone,
         defaults={
             'nombre': payload.get('name', ''),
@@ -131,63 +144,111 @@ def cliente_create(request):
 
 
 @csrf_exempt
+@require_http_methods(["GET", "POST"])
+def cart_view(request):
+    """API para obtener (GET) y guardar (POST) el carrito de un cliente."""
+    if request.method == 'GET':
+        phone = request.GET.get('phone')
+        if not phone:
+            return HttpResponseBadRequest('phone required')
+        try:
+            cliente = Cliente.objects.get(telefono=phone)
+            carrito, _ = Carrito.objects.get_or_create(cliente=cliente)
+            
+            items = []
+            for item in carrito.items.select_related('variacion__producto').prefetch_related('variacion__valores__atributo_def').all():
+                atributos = [{'nombre': v.atributo_def.nombre, 'valor': v.valor} for v in item.variacion.valores.all()]
+                items.append({
+                    'variationId': item.variacion.id,
+                    'productoId': item.variacion.producto.id,
+                    'name': item.variacion.producto.nombre,
+                    'image': item.variacion.producto.foto_url,
+                    'priceBase': float(item.variacion.precio_base),
+                    'quantity': item.cantidad,
+                    'atributos': atributos,
+                })
+            return JsonResponse({'items': items, 'appliedPromoCode': None})
+        except Cliente.DoesNotExist:
+            return HttpResponseNotFound('Client not found')
+
+    if request.method == 'POST':
+        try:
+            payload = json.loads(request.body)
+            phone = payload.get('phone')
+            if not phone:
+                return HttpResponseBadRequest('phone required')
+            with transaction.atomic():
+                cliente = Cliente.objects.get(telefono=phone)
+                carrito, _ = Carrito.objects.get_or_create(cliente=cliente)
+                
+                carrito.items.all().delete()
+                
+                items_data = payload.get('items', [])
+                for item_data in items_data:
+                    try:
+                        variacion = VariacionProducto.objects.get(id=item_data.get('variationId'))
+                        cantidad = int(item_data.get('quantity', 1))
+                        if cantidad > 0:
+                            CarritoItem.objects.create(carrito=carrito, variacion=variacion, cantidad=cantidad)
+                    except (VariacionProducto.DoesNotExist, ValueError):
+                        continue
+            return JsonResponse({'status': 'ok'})
+        except Cliente.DoesNotExist:
+            return HttpResponseNotFound('Client not found')
+        except Exception as e:
+            return HttpResponseBadRequest(f'Error syncing cart: {e}')
+
+
+@csrf_exempt
 @require_http_methods(["POST"])
 def pedido_create(request):
+    """Crea un pedido a partir del carrito de un cliente guardado en la DB."""
     try:
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         return HttpResponseBadRequest('invalid json')
 
     cliente_data = payload.get('cliente')
-    if not cliente_data:
-        return HttpResponseBadRequest('cliente required')
+    if not cliente_data or not cliente_data.get('phone'):
+        return HttpResponseBadRequest('cliente con phone es requerido')
+    
+    try:
+        cliente = Cliente.objects.get(telefono=cliente_data['phone'])
+    except Cliente.DoesNotExist:
+        return HttpResponseNotFound('Cliente no encontrado. No se puede crear el pedido.')
 
-    cliente, _ = Cliente.objects.get_or_create(
-        telefono=cliente_data.get('phone'),
-        defaults={
-            'nombre': cliente_data.get('name', ''),
-            'direccion': cliente_data.get('address', ''),
-            'ciudad': cliente_data.get('city', ''),
-        }
-    )
-    items = payload.get('items', [])
+    try:
+        carrito = Carrito.objects.get(cliente=cliente)
+        if not carrito.items.exists():
+            return HttpResponseBadRequest('No se puede crear un pedido de un carrito vacío.')
 
-    if not items:
-        return HttpResponseBadRequest('items required')
+        with transaction.atomic():
+            promo_code = payload.get('promoCode')
+            if promo_code:
+                promo = Promo.objects.filter(codigo=promo_code, activo=True).first()
+                if promo and promo.es_valido():
+                    carrito.promos.set([promo])
+                else:
+                    carrito.promos.clear()
+            else:
+                carrito.promos.clear()
+            
+            pedido = Pedido.crear_desde_carrito(carrito)
+            
+            carrito.items.all().delete()
+            carrito.promos.clear()
+            
+    except Carrito.DoesNotExist:
+        return HttpResponseBadRequest('El cliente no tiene un carrito activo.')
+    except Exception as e:
+        return HttpResponseBadRequest(f"Ocurrió un error inesperado: {e}")
 
-    carrito = Carrito.objects.create(cliente=cliente)
-    carrito_items = []
-
-    for item in items:
-        try:
-            variacion = VariacionProducto.objects.get(id=item.get('variationId'))
-        except VariacionProducto.DoesNotExist:
-            continue
-
-        carrito_items.append(
-            CarritoItem(
-                carrito=carrito,
-                variacion=variacion,
-                cantidad=item.get('quantity', 1),
-            )
-        )
-
-    if not carrito_items:
-        carrito.delete()
-        return HttpResponseBadRequest('invalid items')
-
-    CarritoItem.objects.bulk_create(carrito_items)
-
-    promo_code = payload.get('promoCode')
-    if promo_code:
-        promo = Promo.objects.filter(codigo=promo_code, activo=True).first()
-        if promo:
-            carrito.promos.add(promo)
-    pedido = Pedido.crear_desde_carrito(carrito)
     return JsonResponse({'id': pedido.id})
 
 
+@staff_member_required
 def admin_dashboard(request):
+    """Panel de administración del catálogo, protegido por login de staff."""
     section = request.GET.get('section', 'pedidos')
     tipo_form = TipoProductoForm(prefix='tipo')
     categoria_form = CategoriaForm(prefix='cat')
@@ -218,14 +279,15 @@ def admin_dashboard(request):
 
     pedidos = (
         Pedido.objects.select_related('cliente')
-        .prefetch_related('items__variacion__producto')
+        .prefetch_related(
+            'items__variacion__producto',
+            'items__variacion__valores__atributo_def'
+        )
         .all()
         .order_by('-fecha')
     )
-
     clientes = Cliente.objects.all().order_by('nombre')
-
-    from .models import EstadoPedido
+    
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
         'tipo_form': tipo_form,
@@ -238,14 +300,50 @@ def admin_dashboard(request):
     })
 
 
+@staff_member_required
 @require_http_methods(["POST"])
 def actualizar_estado_pedido(request, pedido_id):
+    """Actualiza el estado de un pedido."""
     estado = request.POST.get('estado')
     try:
         pedido = Pedido.objects.get(id=pedido_id)
-        pedido.estado = estado
-        pedido.save()
+        if estado in [choice[0] for choice in EstadoPedido.choices]:
+            pedido.estado = estado
+            pedido.save()
     except Pedido.DoesNotExist:
         return HttpResponseNotFound()
     return redirect('catalogo:admin_dashboard')
 
+
+def render_to_pdf(template_src, context_dict={}):
+    """Función auxiliar para renderizar un template HTML a un objeto PDF."""
+    template = get_template(template_src)
+    html = template.render(context_dict)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html.encode("UTF-8")), result)
+    if not pdf.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    return None
+
+@staff_member_required
+def generar_pedido_pdf(request, pedido_id):
+    """Genera y sirve un PDF para un pedido específico."""
+    try:
+        pedido = Pedido.objects.select_related('cliente').prefetch_related(
+            'items__variacion__producto',
+            'items__variacion__valores__atributo_def'
+        ).get(id=pedido_id)
+    except Pedido.DoesNotExist:
+        return HttpResponseNotFound("Pedido no encontrado")
+
+    context = {'pedido': pedido}
+    pdf = render_to_pdf('catalogo/pedido_pdf.html', context)
+    
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"Pedido_{pedido.id}_{pedido.cliente.nombre.split(' ')[0]}.pdf"
+        content = f"attachment; filename=\"{filename}\""
+        response['Content-Disposition'] = content
+        return response
+    
+    return HttpResponse("Error al generar el PDF", status=500)

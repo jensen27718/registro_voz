@@ -1,7 +1,8 @@
+// catalogo/script.js
+
 document.addEventListener('DOMContentLoaded', () => {
     const DATA = window.INITIAL_DATA;
     const WHATSAPP_NUMBER = window.WHATSAPP_NUMBER;
-
 
     let state = {
         currentUser: null,
@@ -10,12 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
         modalSelection: { productoId: null, variation: null, quantity: 1, selectedAtributos: {} }
     };
 
+    // --- Selectores de Elementos ---
     const pages = document.querySelectorAll('.page');
     const loginForm = document.getElementById('login-form');
     const phoneInput = document.getElementById('phone');
-
     const cityInput = document.getElementById('city');
-
     const registrationFields = document.getElementById('registration-fields');
     const nameInput = document.getElementById('name');
     const addressInput = document.getElementById('address');
@@ -53,6 +53,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return v ? decodeURIComponent(v.split("=")[1]) : null;
     }
 
+    async function syncCartWithServer() {
+        if (!state.currentUser) return;
+        try {
+            await fetch('/catalogo/api/cart/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({
+                    phone: state.currentUser.phone,
+                    items: state.cart.items.map(item => ({
+                        variationId: item.variationId,
+                        quantity: item.quantity
+                    }))
+                })
+            });
+        } catch (error) {
+            console.error('Failed to sync cart with server:', error);
+        }
+    }
+    
     const openProductModal = (productoId) => {
         const producto = DATA.productos.find(p => p.id === productoId);
         if (!producto) return;
@@ -70,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const atributoDef = DATA.atributoDefs.find(def => def.id === defId);
             const valoresDisponibles = [...new Set(variaciones.flatMap(v => v.valorAtributoIds))]
                 .map(valId => DATA.valorAtributos.find(v => v.id === valId))
-
                 .filter(val => val.atributoDefId === defId);
             let optionsHTML = valoresDisponibles.map(val => {
                 if (atributoDef.nombre.toLowerCase() === 'color') {
@@ -95,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modalQuantityValue.textContent = state.modalSelection.quantity;
         modalQuantityMinus.disabled = state.modalSelection.quantity <= 1;
         const { productoId, selectedAtributos } = state.modalSelection;
-
         const variacionesDisponibles = DATA.variacionesProducto.filter(v => v.productoId === productoId);
         const allOptions = modalProductAttributesContainer.querySelectorAll('[data-valor-id]');
         allOptions.forEach(opt => {
@@ -112,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.classList.toggle('pointer-events-none', !match);
         });
         const totalAtributosRequeridos = [...new Set(variacionesDisponibles.flatMap(v => v.valorAtributoIds).map(valId => DATA.valorAtributos.find(v => v.id === valId).atributoDefId))].length;
-
         let variation = null;
         const selectedValorIds = Object.values(selectedAtributos);
         if (selectedValorIds.length === totalAtributosRequeridos) {
@@ -131,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modalAddToCartBtn.disabled = true;
         }
     };
-
+    
     const addToCart = () => {
         const { variation, quantity } = state.modalSelection;
         if (!variation) return;
@@ -139,28 +155,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (existingItem) {
             existingItem.quantity += quantity;
         } else {
-
             const producto = DATA.productos.find(p => p.id === variation.productoId);
             const atributos = variation.valorAtributoIds.map(valId => {
                 const valor = DATA.valorAtributos.find(v => v.id === valId);
                 const definicion = DATA.atributoDefs.find(d => d.id === valor.atributoDefId);
-
                 return { nombre: definicion.nombre, valor: valor.valor };
             });
             state.cart.items.push({
                 variationId: variation.id,
                 productoId: producto.id,
-
                 name: producto.nombre,
                 image: producto.foto_url,
-
                 priceBase: variation.precioBase,
                 quantity,
                 atributos,
             });
         }
-        localStorage.setItem('cart', JSON.stringify(state.cart));
         renderCart();
+        syncCartWithServer();
         closeModal();
         showConfirmationToast();
     };
@@ -201,9 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let discount = 0;
         let promo = null;
         if (appliedPromoCode) {
-
             promo = DATA.promos.find(p => p.codigo === appliedPromoCode);
-
             if (promo) discount = subtotal * (promo.porcentaje / 100);
         }
         const total = subtotal - discount;
@@ -237,19 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         `;
     };
-
+    
     const applyPromo = () => {
         const input = document.getElementById('promo-code-input');
         const errorP = document.getElementById('promo-error');
         const code = input.value.trim().toUpperCase();
         if (!code) return;
-
         const promo = DATA.promos.find(p => p.codigo === code);
-
         const now = new Date();
-        if (promo && promo.activo && new Date(promo.fechaInicio) <= now && new Date(promo.fechaFin) >= now) {
+        if (promo && promo.activo && new Date(promo.fecha_inicio) <= now && new Date(promo.fecha_fin) >= now) {
             state.cart.appliedPromoCode = code;
-            localStorage.setItem('cart', JSON.stringify(state.cart));
             renderCart();
         } else {
             errorP.textContent = "Código inválido o expirado.";
@@ -259,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const removePromo = () => {
         state.cart.appliedPromoCode = null;
-        localStorage.setItem('cart', JSON.stringify(state.cart));
         renderCart();
     };
 
@@ -275,9 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let discount = 0;
         let promo = null;
         if (appliedPromoCode) {
-
             promo = DATA.promos.find(p => p.codigo === appliedPromoCode);
-
             if (promo) discount = subtotal * (promo.porcentaje / 100);
         }
         const total = subtotal - discount;
@@ -286,96 +290,75 @@ document.addEventListener('DOMContentLoaded', () => {
             message += `*Descuento (${promo.porcentaje}%):* -$${discount.toLocaleString('es-CO')}\n`;
         }
         message += `*TOTAL DEL PEDIDO: $${total.toLocaleString('es-CO')}*\n\n`;
-        message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
+        message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Ciudad: ${state.currentUser.city}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
         const response = await fetch('/catalogo/api/pedido/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ cliente: state.currentUser, items, promoCode: appliedPromoCode })
+            body: JSON.stringify({ 
+                cliente: state.currentUser, 
+                promoCode: appliedPromoCode 
+            })
         });
         if (!response.ok) {
-            alert('Error guardando el pedido. Inténtalo de nuevo.');
+            const errorData = await response.text();
+            alert(`Error guardando el pedido: ${errorData}. Inténtalo de nuevo.`);
             return;
         }
         const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
         state.cart = { items: [], appliedPromoCode: null };
-        localStorage.removeItem('cart');
         renderCart();
         toggleCart(false);
         alert('¡Gracias! Serás redirigido a WhatsApp para confirmar tu pedido.');
     };
 
-    const showPage = (pageId) => { pages.forEach(page => page.classList.add('hidden')); document.getElementById(pageId).classList.remove('hidden'); window.scrollTo(0, 0); };
-    const navigateTo = (view, contextId = null) => { state.navigationStack.push({ view, contextId }); renderCurrentView(); };
-    const navigateBack = () => { if (state.navigationStack.length > 1) { state.navigationStack.pop(); renderCurrentView(); } };
-    const updateBreadcrumb = () => {
-        if (state.navigationStack.length <= 1) { breadcrumb.classList.add('hidden'); return; }
-        const parts = state.navigationStack.map(({view, contextId}, idx) => {
-            if(view === 'tiposProducto') return 'Tipos';
-            if(view === 'categorias') { const tipo = DATA.tiposProducto.find(t => t.id === contextId); return tipo ? tipo.nombre : ''; }
-            if(view === 'productos') { const cat = DATA.categorias.find(c => c.id === contextId); return cat ? cat.nombre : ''; }
-            return '';
-        });
-        breadcrumb.textContent = parts.join(' / ');
-        breadcrumb.classList.remove('hidden');
-    };
-    const renderCurrentView = () => {
-        const { view, contextId } = state.navigationStack[state.navigationStack.length - 1];
-        backToCategoriesBtn.style.display = state.navigationStack.length > 2 ? 'block' : 'none';
-        backToTypesBtn.style.display = state.navigationStack.length > 1 ? 'block' : 'none';
-        switch(view) {
-            case 'tiposProducto':
-                renderTiposProducto();
-                break;
-            case 'categorias':
-                renderCategorias(contextId);
-                break;
-            case 'productos':
-                renderProducts(contextId);
-                break;
-        }
-        updateBreadcrumb();
-    };
-
-    const renderTiposProducto = () => {
-        listingTitle.textContent = "Explora nuestras Familias de Productos";
-        listingGrid.innerHTML = DATA.tiposProducto.map(tipo => `
-            <div class="category-card" data-view="categorias" data-id="${tipo.id}">
-                ${tipo.imagen_url ? `<img src="${tipo.imagen_url}" alt="${tipo.nombre}" class="w-full h-40 object-cover">` : ''}
-                <div class="p-6">
-                    <h3 class="text-xl font-bold text-center mb-2">${tipo.nombre}</h3>
-                    <p class="text-center text-gray-600">${tipo.descripcion}</p>
-                </div>
-            </div>
-        `).join('');
-        showPage('categories-page');
-    };
-
-    const renderCategorias = (tipoProductoId) => { const tipo = DATA.tiposProducto.find(t => t.id === tipoProductoId); listingTitle.textContent = `Categorías de ${tipo.nombre}`; listingGrid.innerHTML = DATA.categorias.filter(c => c.tipoProductoId === tipoProductoId).map(cat => `<div class="category-card" data-view="productos" data-id="${cat.id}"><img src="${cat.imagen_url}" alt="${cat.nombre}" class="w-full h-40 object-cover"><div class="p-4"><h3 class="text-xl font-bold text-center">${cat.nombre}</h3></div></div>`).join(''); showPage('categories-page'); };
-    const renderProducts = (categoriaId) => { const cat = DATA.categorias.find(c => c.id === categoriaId); productsTitle.textContent = cat.nombre; productsGrid.innerHTML = DATA.productos.filter(p => p.categoriaId === categoriaId).map(prod => `<div class="product-card" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.nombre}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.nombre}</h4></div></div>`).join(''); showPage('products-page'); };
     const handleLogin = async (e) => {
         e.preventDefault();
         const phone = phoneInput.value.trim();
         if (!phone) return;
+        const proceedToCatalog = async (userData) => {
+            state.currentUser = userData;
+            localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+            try {
+                const cartRes = await fetch(`/catalogo/api/cart/?phone=${state.currentUser.phone}`);
+                if (cartRes.ok) {
+                    state.cart = await cartRes.json();
+                } else {
+                    state.cart = { items: [], appliedPromoCode: null };
+                }
+            } catch (error) {
+                console.error("Error fetching cart:", error);
+                state.cart = { items: [], appliedPromoCode: null };
+            }
+            renderCart();
+            navigateTo("tiposProducto");
+        };
         if (registrationFields.classList.contains("hidden")) {
             const res = await fetch(`/catalogo/api/cliente/detail/?phone=${phone}`);
             if (res.ok) {
-                state.currentUser = await res.json();
-                navigateTo("tiposProducto");
-            } else {
+                const userData = await res.json();
+                await proceedToCatalog(userData);
+            } else if (res.status === 404) {
                 registrationFields.classList.remove("hidden");
                 nameInput.required = true;
                 addressInput.required = true;
                 cityInput.required = true;
-                alert("Eres nuevo. Completa tus datos.");
-                return;
+                alert("Parece que eres nuevo/a. Por favor, completa tus datos para registrarte.");
+            } else {
+                alert("Ocurrió un error. Inténtalo de nuevo.");
             }
         } else {
             const payload = { phone, name: nameInput.value.trim(), address: addressInput.value.trim(), city: cityInput.value.trim() };
+            if(!payload.name || !payload.address || !payload.city) {
+                alert("Por favor, completa todos los campos.");
+                return;
+            }
             const res = await fetch("/catalogo/api/cliente/", {method: "POST", headers: {"Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken")}, body: JSON.stringify(payload)});
             if (res.ok) {
-                state.currentUser = await res.json();
-                navigateTo("tiposProducto");
+                const userData = await res.json();
+                await proceedToCatalog(userData);
+            } else {
+                alert("No se pudo completar el registro. Inténtalo de nuevo.");
             }
         }
     };
@@ -388,23 +371,185 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.cart.items = state.cart.items.filter(i => i.variationId !== variationId);
             }
         }
-        localStorage.setItem('cart', JSON.stringify(state.cart));
         renderCart();
+        syncCartWithServer();
     };
-    const clearCart = () => { if(confirm('¿Vaciar el carrito?')) { state.cart = { items: [], appliedPromoCode: null }; localStorage.removeItem('cart'); renderCart(); } };
-    const toggleCart = (forceOpen = null) => { const isOpen = !cartSidebar.classList.contains('translate-x-full'); if (forceOpen === true || (forceOpen === null && !isOpen)) { cartSidebar.classList.remove('translate-x-full'); } else { cartSidebar.classList.add('translate-x-full'); closeModal(); } };
-    const closeModal = () => { modalOverlay.classList.add('hidden'); productModal.classList.add('translate-y-full'); };
-    const showConfirmationToast = () => { confirmationToast.classList.remove('opacity-0', 'translate-y-10'); setTimeout(() => { confirmationToast.classList.add('opacity-0', 'translate-y-10'); }, 2000); };
+    
+    const clearCart = () => { 
+        if(confirm('¿Estás seguro de que quieres vaciar el carrito?')) { 
+            state.cart = { items: [], appliedPromoCode: null };
+            renderCart();
+            syncCartWithServer();
+        }
+    };
+    
+    const toggleCart = (forceOpen = null) => {
+        const isOpen = !cartSidebar.classList.contains('translate-x-full');
+        if (forceOpen === true || (forceOpen === null && !isOpen)) {
+            cartSidebar.classList.remove('translate-x-full');
+        } else {
+            cartSidebar.classList.add('translate-x-full');
+            closeModal();
+        }
+    };
 
+    const closeModal = () => {
+        modalOverlay.classList.add('hidden');
+        productModal.classList.add('translate-y-full');
+    };
+
+    const showConfirmationToast = () => {
+        confirmationToast.classList.remove('opacity-0', 'translate-y-10');
+        setTimeout(() => {
+            confirmationToast.classList.add('opacity-0', 'translate-y-10');
+        }, 2000);
+    };
+
+    // --- LÓGICA DE NAVEGACIÓN ---
+
+    const showPage = (pageId) => {
+        pages.forEach(page => page.classList.add('hidden'));
+        document.getElementById(pageId).classList.remove('hidden');
+        window.scrollTo(0, 0);
+    };
+
+    const navigateTo = (view, contextId = null) => {
+        state.navigationStack.push({ view, contextId });
+        renderCurrentView();
+    };
+
+    const navigateBack = () => {
+        if (state.navigationStack.length > 1) {
+            state.navigationStack.pop();
+            renderCurrentView();
+        }
+    };
+    
+    const navigateToView = (index) => {
+        if (index < 0 || index >= state.navigationStack.length) return;
+        state.navigationStack = state.navigationStack.slice(0, index + 1);
+        renderCurrentView();
+    };
+
+    const updateBreadcrumb = () => {
+        if (state.navigationStack.length <= 1) {
+            breadcrumb.innerHTML = '';
+            breadcrumb.classList.add('hidden');
+            return;
+        }
+        const breadcrumbParts = state.navigationStack.map(({ view, contextId }, index) => {
+            let name = '';
+            const isLast = index === state.navigationStack.length - 1;
+            if (view === 'tiposProducto') name = 'Tipos de Producto';
+            else if (view === 'categorias') {
+                const tipo = DATA.tiposProducto.find(t => t.id === contextId);
+                name = tipo ? tipo.nombre : 'Categorías';
+            } else if (view === 'productos') {
+                const cat = DATA.categorias.find(c => c.id === contextId);
+                name = cat ? cat.nombre : 'Productos';
+            }
+            if (isLast) {
+                return `<span class="font-bold text-gray-500">${name}</span>`;
+            } else {
+                return `<a href="#" class="text-blue-600 hover:underline" data-nav-index="${index}">${name}</a>`;
+            }
+        });
+        breadcrumb.innerHTML = breadcrumbParts.join('<span class="mx-2 text-gray-400">/</span>');
+        breadcrumb.classList.remove('hidden');
+    };
+
+    const renderCurrentView = () => {
+        if (state.navigationStack.length === 0) return;
+        const { view, contextId } = state.navigationStack[state.navigationStack.length - 1];
+        backToCategoriesBtn.style.display = 'none';
+        backToTypesBtn.style.display = 'none';
+        switch (view) {
+            case 'tiposProducto':
+                renderTiposProducto();
+                break;
+            case 'categorias':
+                renderCategorias(contextId);
+                backToTypesBtn.style.display = 'block';
+                break;
+            case 'productos':
+                renderProducts(contextId);
+                backToCategoriesBtn.style.display = 'block';
+                break;
+        }
+        updateBreadcrumb();
+    };
+    
+    const renderTiposProducto = () => {
+        listingTitle.textContent = "Explora nuestras Familias de Productos";
+        listingGrid.innerHTML = DATA.tiposProducto.map(tipo => `
+            <div class="category-card cursor-pointer" data-view="categorias" data-id="${tipo.id}">
+                ${tipo.imagen_url ? `<img src="${tipo.imagen_url}" alt="${tipo.nombre}" class="w-full h-40 object-cover">` : ''}
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-center mb-2">${tipo.nombre}</h3>
+                    <p class="text-center text-gray-600">${tipo.descripcion}</p>
+                </div>
+            </div>
+        `).join('');
+        showPage('categories-page');
+    };
+
+    const renderCategorias = (tipoProductoId) => {
+        const tipo = DATA.tiposProducto.find(t => t.id === tipoProductoId);
+        listingTitle.textContent = `Categorías de ${tipo ? tipo.nombre : ''}`;
+        listingGrid.innerHTML = DATA.categorias
+            .filter(c => c.tipoProductoId === tipoProductoId)
+            .map(cat => `<div class="category-card cursor-pointer" data-view="productos" data-id="${cat.id}"><img src="${cat.imagen_url}" alt="${cat.nombre}" class="w-full h-40 object-cover"><div class="p-4"><h3 class="text-xl font-bold text-center">${cat.nombre}</h3></div></div>`)
+            .join('');
+        showPage('categories-page');
+    };
+
+    const renderProducts = (categoriaId) => {
+        const cat = DATA.categorias.find(c => c.id === categoriaId);
+        productsTitle.textContent = cat ? cat.nombre : '';
+        productsGrid.innerHTML = DATA.productos
+            .filter(p => p.categoriaId === categoriaId)
+            .map(prod => `<div class="product-card cursor-pointer" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.nombre}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.nombre}</h4></div></div>`)
+            .join('');
+        showPage('products-page');
+    };
+
+    // --- EVENT LISTENERS ---
     loginForm.addEventListener('submit', handleLogin);
     backToCategoriesBtn.addEventListener('click', navigateBack);
     backToTypesBtn.addEventListener('click', navigateBack);
-    listingGrid.addEventListener('click', (e) => { const card = e.target.closest('.category-card'); if (card) navigateTo(card.dataset.view, Number(card.dataset.id)); });
-    productsGrid.addEventListener('click', (e) => { const card = e.target.closest('.product-card'); if (card) openProductModal(Number(card.dataset.productId)); });
+    listingGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.category-card');
+        if (card) navigateTo(card.dataset.view, Number(card.dataset.id));
+    });
+    productsGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.product-card');
+        if (card) openProductModal(Number(card.dataset.productId));
+    });
+    breadcrumb.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = e.target.closest('a[data-nav-index]');
+        if (target) {
+            const index = parseInt(target.dataset.navIndex, 10);
+            navigateToView(index);
+        }
+    });
     modalOverlay.addEventListener('click', closeModal);
     modalQuantityPlus.addEventListener('click', () => { state.modalSelection.quantity++; updateModalUI(); });
     modalQuantityMinus.addEventListener('click', () => { if (state.modalSelection.quantity > 1) { state.modalSelection.quantity--; updateModalUI(); } });
-    modalProductAttributesContainer.addEventListener('click', (e) => { const option = e.target.closest('.variation-option, .color-swatch'); if (option) { const defId = option.dataset.atributoDefId; const valId = Number(option.dataset.valorId); option.parentElement.querySelectorAll('.selected').forEach(el => el.classList.remove('selected')); option.classList.add('selected'); state.modalSelection.selectedAtributos[defId] = valId; updateModalUI(); } });
+    modalProductAttributesContainer.addEventListener('click', (e) => {
+        const option = e.target.closest('.variation-option, .color-swatch');
+        if (option) {
+            const defId = option.dataset.atributoDefId;
+            const valId = Number(option.dataset.valorId);
+            const parent = option.parentElement;
+            if (parent.querySelector('.selected')) {
+                parent.querySelector('.selected').classList.remove('selected');
+            }
+            option.classList.add('selected');
+            state.modalSelection.selectedAtributos[defId] = valId;
+            updateModalUI();
+        }
+    });
     modalAddToCartBtn.addEventListener('click', addToCart);
     cartToggleBtn.addEventListener('click', () => toggleCart());
     closeCartBtn.addEventListener('click', () => toggleCart(false));
@@ -415,10 +560,13 @@ document.addEventListener('DOMContentLoaded', () => {
             changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), Number(e.target.dataset.change));
         }
         if (e.target.classList.contains('remove-item')) {
-            changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), -Number.MAX_SAFE_INTEGER);
+            changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), -Infinity);
         }
     });
-    cartFooter.addEventListener('click', e => { if (e.target.id === 'apply-promo-btn') applyPromo(); if (e.target.id === 'remove-promo-btn') removePromo(); });
+    cartFooter.addEventListener('click', e => {
+        if (e.target.id === 'apply-promo-btn') applyPromo();
+        if (e.target.id === 'remove-promo-btn') removePromo();
+    });
 
     const init = () => {
         const totalContainer = document.getElementById('cart-total')?.parentElement;
@@ -427,15 +575,12 @@ document.addEventListener('DOMContentLoaded', () => {
         promoContainer.id = 'cart-promo-section';
         promoContainer.className = 'my-4';
         cartFooter.insertBefore(promoContainer, checkoutBtn);
-        const savedCart = localStorage.getItem('cart');
-        if (savedCart) {
-            const parsedCart = JSON.parse(savedCart);
-            state.cart.items = parsedCart.items || [];
-            state.cart.appliedPromoCode = parsedCart.appliedPromoCode || null;
-        }
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('cart');
         showPage('login-page');
         renderCart();
         updateBreadcrumb();
     };
+
     init();
 });

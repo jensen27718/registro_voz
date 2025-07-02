@@ -1,5 +1,8 @@
+# catalogo/models.py
+
 from django.db import models
 from django.utils import timezone
+from django.db.models import Sum, F # <-- Importaciones para el cálculo del total
 
 
 class Cliente(models.Model):
@@ -8,7 +11,6 @@ class Cliente(models.Model):
     nombre = models.CharField(max_length=150)
     direccion = models.CharField(max_length=255, blank=True)
     ciudad = models.CharField(max_length=100, blank=True)
-
 
     def __str__(self):
         return f"{self.nombre} ({self.telefono})"
@@ -26,9 +28,7 @@ class Administrador(models.Model):
 class TipoProducto(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True)
-
     imagen_url = models.URLField(blank=True)
-
 
     def __str__(self):
         return self.nombre
@@ -38,8 +38,6 @@ class Categoria(models.Model):
     tipo_producto = models.ForeignKey(TipoProducto, on_delete=models.CASCADE, related_name="categorias")
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)
-
-
     imagen_url = models.URLField(blank=True)
 
     class Meta:
@@ -62,9 +60,6 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
-
-    def ver_variaciones(self):
-        return list(self.variaciones.all())
 
 
 class AtributoDef(models.Model):
@@ -113,20 +108,10 @@ class VariacionProducto(models.Model):
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
     valores = models.ManyToManyField(ValorAtributo, related_name="variaciones")
 
-    def obtener_atributo(self, nombre):
-        try:
-            val = self.valores.select_related("atributo_def").get(atributo_def__nombre=nombre)
-            return val.valor
-        except ValorAtributo.DoesNotExist:
-            return ""
-
-    def precio_con_promo(self, promo: Promo):
-        if promo and promo.es_valido():
-            return self.precio_base * (1 - promo.porcentaje / 100)
-        return self.precio_base
-
     def __str__(self):
-        return f"Variación {self.id} de {self.producto}"
+        # Genera una descripción de la variación para el admin
+        valores_str = ", ".join([v.valor for v in self.valores.all()])
+        return f"{self.producto.nombre} ({valores_str})"
 
 
 class Carrito(models.Model):
@@ -168,6 +153,22 @@ class Pedido(models.Model):
     def __str__(self):
         return f"Pedido {self.id} para {self.cliente}"
 
+    @property
+    def total(self):
+        """Calcula el total del pedido sumando los subtotales de cada item."""
+        total_pedido = self.items.aggregate(
+            total=Sum(F('cantidad') * F('precio_unitario'))
+        )['total']
+        
+        # Aplicar descuento de la primera promoción válida, si existe
+        if total_pedido and self.promos.exists():
+            promo = self.promos.first() # Suponemos una promo por pedido
+            if promo.es_valido():
+                descuento = total_pedido * (promo.porcentaje / 100)
+                total_pedido -= descuento
+
+        return total_pedido or 0
+
     @classmethod
     def crear_desde_carrito(cls, carrito: Carrito):
         pedido = cls.objects.create(cliente=carrito.cliente)
@@ -188,5 +189,9 @@ class PedidoItem(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
 
+    @property
+    def subtotal(self):
+        return self.cantidad * self.precio_unitario
+
     def __str__(self):
-        return f"{self.cantidad} x {self.variacion}" 
+        return f"{self.cantidad} x {self.variacion}"

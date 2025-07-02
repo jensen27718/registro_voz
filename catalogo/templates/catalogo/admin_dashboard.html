@@ -1,107 +1,132 @@
-
 {% extends 'catalogo/admin_base.html' %}
-{% block title %}Administración{% endblock %}
-{% block content %}
-<nav class="mb-6 border-b">
-  <ul class="flex gap-4">
-    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=pedidos" class="pb-2 {% if section == 'pedidos' %}font-bold border-b-2 border-blue-500{% endif %}">Pedidos</a></li>
-    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=tipo" class="pb-2 {% if section == 'tipo' %}font-bold border-b-2 border-blue-500{% endif %}">Tipos</a></li>
-    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="pb-2 {% if section == 'categoria' %}font-bold border-b-2 border-blue-500{% endif %}">Categorías</a></li>
-    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=producto" class="pb-2 {% if section == 'producto' %}font-bold border-b-2 border-blue-500{% endif %}">Productos</a></li>
-    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="pb-2 {% if section == 'variacion' %}font-bold border-b-2 border-blue-500{% endif %}">Variaciones</a></li>
-    <li><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="pb-2 {% if section == 'cliente' %}font-bold border-b-2 border-blue-500{% endif %}">Clientes</a></li>
+{% load static %}
+{% load catalogo_tags %} {# <-- PASO 1: Cargar nuestros tags personalizados #}
 
+{% block title %}Administración de Catálogo{% endblock %}
+
+{% block content %}
+<nav class="mb-8 border-b border-gray-200">
+  <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500">
+    <li class="mr-2">
+      <a href="{% url 'catalogo:admin_dashboard' %}?section=pedidos" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'pedidos' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">
+        Pedidos
+      </a>
+    </li>
+    <!-- ... otros nav links ... -->
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=tipo" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'tipo' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Tipos</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'categoria' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Categorías</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=producto" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'producto' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Productos</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'variacion' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Variaciones</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'cliente' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Clientes</a></li>
   </ul>
 </nav>
+
 <div class="space-y-8">
   {% if section == 'pedidos' %}
-  <h1 class="text-2xl font-bold">Pedidos</h1>
-  <table class="min-w-full bg-white text-black rounded shadow">
-
-    <thead><tr><th>ID</th><th>Cliente</th><th>Estado</th><th>Cambiar</th><th>Detalles</th></tr></thead>
-    <tbody>
-      {% for p in pedidos %}
-      <tr class="border-b">
-        <td>{{ p.id }}</td>
-        <td>{{ p.cliente.nombre }} - {{ p.cliente.telefono }} - {{ p.cliente.direccion }}</td>
-        <td>{{ p.get_estado_display }}</td>
-        <td>
-
-          <form method="post" action="{% url 'catalogo:actualizar_estado_pedido' p.id %}" class="flex items-center gap-2">
-            {% csrf_token %}
-            <select name="estado" class="border p-1 text-sm rounded">
-
-              {% for key, val in estados %}
+  <h1 class="text-3xl font-bold text-gray-800">Pedidos Recibidos</h1>
+  <div class="overflow-x-auto bg-white rounded-lg shadow">
+    <table class="min-w-full text-sm text-left text-gray-700">
+      <thead class="bg-gray-100 text-xs text-gray-700 uppercase">
+        <tr>
+          <th scope="col" class="px-6 py-3">ID Pedido / Fecha</th>
+          <th scope="col" class="px-6 py-3">Cliente</th>
+          <th scope="col" class="px-6 py-3">Total</th>
+          <th scope="col" class="px-6 py-3">Estado</th>
+          <th scope="col" class="px-6 py-3">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr class="bg-white border-b hover:bg-gray-50">
+          <td class="px-6 py-4">
+            <div class="font-bold text-gray-900">#{{ p.id }}</div>
+            <div class="text-xs text-gray-500">{{ p.fecha|date:"d M, Y H:i" }}</div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="font-semibold">{{ p.cliente.nombre }}</div>
+            <div class="text-gray-500">{{ p.cliente.telefono }}</div>
+          </td>
+          <td class="px-6 py-4 font-bold text-gray-800">
+            ${{ p.total|floatformat:0 }}
+          </td>
+          <td class="px-6 py-4">
+            <!-- PASO 2: Aplicar el filtro de color -->
+            <span class="px-2 py-1 font-semibold leading-tight rounded-full text-xs {{ p.estado|estado_pedido_color }}">
+              {{ p.get_estado_display }}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <form method="post" action="{% url 'catalogo:actualizar_estado_pedido' p.id %}" class="flex items-center gap-2 mb-2">
+              {% csrf_token %}
+              <select name="estado" class="border p-1.5 text-xs rounded-md w-full focus:ring-blue-500 focus:border-blue-500">
+                {% for key, val in estados %}
                 <option value="{{ key }}" {% if key == p.estado %}selected{% endif %}>{{ val }}</option>
-              {% endfor %}
-            </select>
-
-            <button class="bg-blue-500 text-white px-2 text-sm rounded">Guardar</button>
-
-          </form>
-        </td>
-        <td><button class="toggle-items text-blue-600" data-pedido="{{ p.id }}">Ver</button></td>
-      </tr>
-      <tr class="hidden bg-gray-50" id="pedido-items-{{ p.id }}">
-        <td colspan="5">
-          <ul class="pl-4 list-disc">
-            {% for item in p.items.all %}
-            <li>{{ item.cantidad }} x {{ item.variacion.producto.nombre }} ({{ item.variacion.id }})</li>
-            {% endfor %}
-          </ul>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  {% elif section == 'tipo' %}
-  <h2 class="text-xl font-bold">Nuevo Tipo de Producto</h2>
-  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
-    {% csrf_token %}
-    {{ tipo_form.as_p }}
-    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-  </form>
-  {% elif section == 'categoria' %}
-  <h2 class="text-xl font-bold">Nueva Categoría</h2>
-  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
-    {% csrf_token %}
-    {{ categoria_form.as_p }}
-    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-  </form>
-  {% elif section == 'producto' %}
-  <h2 class="text-xl font-bold">Nuevo Producto</h2>
-  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
-    {% csrf_token %}
-    {{ producto_form.as_p }}
-    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-  </form>
-  {% elif section == 'variacion' %}
-  <h2 class="text-xl font-bold">Nueva Variación</h2>
-  <form method="post" class="space-y-2 bg-white p-4 rounded shadow">
-    {% csrf_token %}
-    {{ variacion_form.as_p }}
-    <button class="bg-green-500 text-white px-4 py-1">Guardar</button>
-  </form>
-  {% elif section == 'cliente' %}
-  <h2 class="text-xl font-bold">Clientes Registrados</h2>
-  <table class="min-w-full bg-white text-black rounded shadow">
-    <thead>
-      <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Ciudad</th></tr>
-    </thead>
-    <tbody>
-      {% for c in clientes %}
-      <tr class="border-b">
-        <td>{{ c.id }}</td>
-        <td>{{ c.nombre }}</td>
-        <td>{{ c.telefono }}</td>
-        <td>{{ c.direccion }}</td>
-        <td>{{ c.ciudad }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
+                {% endfor %}
+              </select>
+              <button class="bg-blue-500 text-white px-3 py-1.5 text-xs font-bold rounded-md hover:bg-blue-600 transition-colors">Guardar</button>
+            </form>
+            <div class="flex items-center space-x-2 mt-2">
+              <button class="toggle-items flex items-center gap-1 text-sm text-blue-600 font-semibold py-1 px-2 rounded-md hover:bg-blue-50" data-pedido="{{ p.id }}">
+                Ver Items
+              </button>
+              <a href="{% url 'catalogo:generar_pedido_pdf' p.id %}" target="_blank" class="flex items-center gap-1 text-sm text-red-600 font-semibold py-1 px-2 rounded-md hover:bg-red-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                PDF
+              </a>
+            </div>
+          </td>
+        </tr>
+        <tr class="hidden" id="pedido-items-{{ p.id }}">
+          <td colspan="5" class="p-4 bg-gray-100"> {# <-- Colspan ajustado a 5 #}
+            <div class="p-4 bg-white rounded-md border">
+              <h4 class="font-bold mb-3 text-gray-800">Items del Pedido #{{ p.id }}</h4>
+              <table class="w-full text-sm">
+                  <thead class="text-left bg-gray-50">
+                      <tr class="border-b">
+                          <th class="py-2 px-2 font-semibold text-gray-600">Producto</th>
+                          <th class="py-2 px-2 font-semibold text-gray-600 text-center">Cantidad</th>
+                          <th class="py-2 px-2 font-semibold text-gray-600 text-right">Precio Unit.</th>
+                          <th class="py-2 px-2 font-semibold text-gray-600 text-right">Subtotal</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                  {% for item in p.items.all %}
+                  <tr class="border-t">
+                      <td class="py-3 px-2">
+                          <div class="font-semibold text-gray-900">{{ item.variacion.producto.nombre }}</div>
+                          <div class="text-xs text-gray-600 mt-1">
+                              {% for valor in item.variacion.valores.all %}
+                                  <span class="font-medium">{{ valor.atributo_def.nombre }}:</span> {{ valor.valor }}{% if not forloop.last %}, {% endif %}
+                              {% endfor %}
+                          </div>
+                      </td>
+                      <td class="py-3 px-2 text-center">{{ item.cantidad }}</td>
+                      <td class="py-3 px-2 text-right">${{ item.precio_unitario|floatformat:0 }}</td>
+                      <td class="py-3 px-2 text-right font-bold text-gray-900">${{ item.subtotal|floatformat:0 }}</td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center py-10 text-gray-500">No hay pedidos registrados todavía.</td> {# <-- Colspan ajustado a 5 #}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <!-- ... resto de las secciones (tipo, categoria, etc.) sin cambios ... -->
+  <div class="bg-white p-6 rounded-lg shadow max-w-lg">
+    {% if section == 'tipo' %}<h2 class="text-2xl font-bold text-gray-800">Nuevo Tipo de Producto</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ tipo_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Tipo</button></form>{% endif %}
+    {% if section == 'categoria' %}<h2 class="text-2xl font-bold text-gray-800">Nueva Categoría</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ categoria_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Categoría</button></form>{% endif %}
+    {% if section == 'producto' %}<h2 class="text-2xl font-bold text-gray-800">Nuevo Producto</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ producto_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Producto</button></form>{% endif %}
+    {% if section == 'variacion' %}<h2 class="text-2xl font-bold text-gray-800">Nueva Variación</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ variacion_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Variación</button></form>{% endif %}
+    {% if section == 'cliente' %}<h2 class="text-2xl font-bold text-gray-800">Clientes Registrados</h2><div class="overflow-x-auto bg-white rounded-lg shadow mt-4"><table class="min-w-full text-sm text-left text-gray-700"><thead class="bg-gray-100 text-xs text-gray-700 uppercase"><tr><th class="px-6 py-3">ID</th><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Teléfono</th><th class="px-6 py-3">Dirección</th></tr></thead><tbody>{% for c in clientes %}<tr class="border-b hover:bg-gray-50"><td class="px-6 py-4">{{ c.id }}</td><td class="px-6 py-4">{{ c.nombre }}</td><td class="px-6 py-4">{{ c.telefono }}</td><td class="px-6 py-4">{{ c.direccion }}, {{ c.ciudad }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  </div>
   {% endif %}
 </div>
 {% endblock %}
@@ -113,12 +138,23 @@
             new TomSelect('#id_var-valores', { plugins: ['remove_button'] });
         }
         document.querySelectorAll('.toggle-items').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const row = document.getElementById(`pedido-items-${btn.dataset.pedido}`);
-                row.classList.toggle('hidden');
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                const pedidoId = btn.dataset.pedido;
+                const detailsRow = document.getElementById(`pedido-items-${pedidoId}`);
+                if (detailsRow) {
+                    const isHidden = detailsRow.classList.contains('hidden');
+                    detailsRow.classList.toggle('hidden');
+                    if (isHidden) {
+                        btn.innerHTML = 'Ocultar Items';
+                        btn.classList.add('bg-blue-100');
+                    } else {
+                        btn.innerHTML = 'Ver Items';
+                        btn.classList.remove('bg-blue-100');
+                    }
+                }
             });
         });
     });
 </script>
 {% endblock %}
-
