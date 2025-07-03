@@ -15,7 +15,14 @@ from xhtml2pdf import pisa
 import io
 # ---------------------------------------------
 
-from .forms import TipoProductoForm, CategoriaForm, ProductoForm, VariacionProductoForm
+from .forms import (
+    TipoProductoForm,
+    CategoriaForm,
+    ProductoForm,
+    VariacionProductoForm,
+    AtributoDefForm,
+    ValorAtributoForm,
+)
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
     AtributoDef, ValorAtributo, VariacionProducto, Promo,
@@ -250,32 +257,78 @@ def pedido_create(request):
 def admin_dashboard(request):
     """Panel de administración del catálogo, protegido por login de staff."""
     section = request.GET.get('section', 'pedidos')
-    tipo_form = TipoProductoForm(prefix='tipo')
-    categoria_form = CategoriaForm(prefix='cat')
-    producto_form = ProductoForm(prefix='prod')
-    variacion_form = VariacionProductoForm(prefix='var')
+    edit_tipo = request.GET.get('edit_tipo')
+    edit_cat = request.GET.get('edit_cat')
+    edit_prod = request.GET.get('edit_prod')
+    edit_var = request.GET.get('edit_var')
+    edit_atr = request.GET.get('edit_atr')
+    edit_val = request.GET.get('edit_val')
+
+    tipo_form = TipoProductoForm(prefix='tipo', instance=TipoProducto.objects.get(id=edit_tipo) if edit_tipo else None)
+    categoria_form = CategoriaForm(prefix='cat', instance=Categoria.objects.get(id=edit_cat) if edit_cat else None)
+    producto_form = ProductoForm(prefix='prod', instance=Producto.objects.get(id=edit_prod) if edit_prod else None)
+    variacion_form = VariacionProductoForm(prefix='var', instance=VariacionProducto.objects.get(id=edit_var) if edit_var else None)
+    atributo_form = AtributoDefForm(prefix='atr', instance=AtributoDef.objects.get(id=edit_atr) if edit_atr else None)
+    valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
 
     if request.method == 'POST':
+        # eliminaciones
+        if 'delete_tipo' in request.POST:
+            TipoProducto.objects.filter(id=request.POST['delete_tipo']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=tipo")
+        if 'delete_cat' in request.POST:
+            Categoria.objects.filter(id=request.POST['delete_cat']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=categoria")
+        if 'delete_prod' in request.POST:
+            Producto.objects.filter(id=request.POST['delete_prod']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=producto")
+        if 'delete_var' in request.POST:
+            VariacionProducto.objects.filter(id=request.POST['delete_var']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=variacion")
+        if 'delete_atr' in request.POST:
+            AtributoDef.objects.filter(id=request.POST['delete_atr']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=atributo")
+        if 'delete_val' in request.POST:
+            ValorAtributo.objects.filter(id=request.POST['delete_val']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=valor")
+
+        # creaciones/ediciones
         if 'tipo-nombre' in request.POST:
-            tipo_form = TipoProductoForm(request.POST, prefix='tipo')
+            instance = TipoProducto.objects.get(id=edit_tipo) if edit_tipo else None
+            tipo_form = TipoProductoForm(request.POST, prefix='tipo', instance=instance)
             if tipo_form.is_valid():
                 tipo_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=tipo")
         if 'cat-nombre' in request.POST:
-            categoria_form = CategoriaForm(request.POST, prefix='cat')
+            instance = Categoria.objects.get(id=edit_cat) if edit_cat else None
+            categoria_form = CategoriaForm(request.POST, prefix='cat', instance=instance)
             if categoria_form.is_valid():
                 categoria_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=categoria")
         if 'prod-nombre' in request.POST:
-            producto_form = ProductoForm(request.POST, prefix='prod')
+            instance = Producto.objects.get(id=edit_prod) if edit_prod else None
+            producto_form = ProductoForm(request.POST, prefix='prod', instance=instance)
             if producto_form.is_valid():
                 producto_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=producto")
         if 'var-precio_base' in request.POST:
-            variacion_form = VariacionProductoForm(request.POST, prefix='var')
+            instance = VariacionProducto.objects.get(id=edit_var) if edit_var else None
+            variacion_form = VariacionProductoForm(request.POST, prefix='var', instance=instance)
             if variacion_form.is_valid():
                 variacion_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=variacion")
+        if 'atr-nombre' in request.POST:
+            instance = AtributoDef.objects.get(id=edit_atr) if edit_atr else None
+            atributo_form = AtributoDefForm(request.POST, prefix='atr', instance=instance)
+            if atributo_form.is_valid():
+                atributo_form.save()
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=atributo")
+        if 'val-valor' in request.POST:
+            instance = ValorAtributo.objects.get(id=edit_val) if edit_val else None
+            valor_form = ValorAtributoForm(request.POST, prefix='val', instance=instance)
+            if valor_form.is_valid():
+                valor_form.save()
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=valor")
 
     pedidos = (
         Pedido.objects.select_related('cliente')
@@ -295,6 +348,8 @@ def admin_dashboard(request):
         .prefetch_related('valores__atributo_def')
         .all()
     )
+    atributos = AtributoDef.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
+    valores = ValorAtributo.objects.select_related('atributo_def__tipo_producto').order_by('atributo_def__nombre', 'valor')
 
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
@@ -302,11 +357,15 @@ def admin_dashboard(request):
         'categoria_form': categoria_form,
         'producto_form': producto_form,
         'variacion_form': variacion_form,
+        'atributo_form': atributo_form,
+        'valor_form': valor_form,
         'clientes': clientes,
         'tipos': tipos,
         'categorias': categorias,
         'productos': productos,
         'variaciones': variaciones,
+        'atributos': atributos,
+        'valores': valores,
         'estados': EstadoPedido.choices,
         'section': section,
     })
