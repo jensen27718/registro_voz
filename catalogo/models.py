@@ -45,7 +45,8 @@ class Categoria(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        return self.nombre
+        # Mostrar el tipo de producto para que sea más claro en formularios
+        return f"{self.tipo_producto.nombre} - {self.nombre}"
 
 
 class Producto(models.Model):
@@ -59,7 +60,8 @@ class Producto(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        return self.nombre
+        # Mostrar la categoría para una mejor referencia en el admin
+        return f"{self.categoria.nombre} - {self.nombre}"
 
 
 class AtributoDef(models.Model):

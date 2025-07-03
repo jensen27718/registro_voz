@@ -17,4 +17,5 @@ urlpatterns = [
     path('admin/pedido/<int:pedido_id>/estado/', views.actualizar_estado_pedido, name='actualizar_estado_pedido'),
     # --- NUEVA RUTA PARA EL PDF ---
     path('admin/pedido/<int:pedido_id>/pdf/', views.generar_pedido_pdf, name='generar_pedido_pdf'),
+    path('admin/valores-producto/', views.valores_por_producto, name='valores_por_producto'),
 ]
