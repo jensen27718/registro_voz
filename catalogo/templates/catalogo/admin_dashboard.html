@@ -124,8 +124,11 @@
   <div class="space-y-8">
     {% if section == 'tipo' %}
       <h2 class="text-2xl font-bold text-gray-800">Tipos de Producto</h2>
+
         <div class="md:flex gap-4">
         <div class="md:w-3/4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+
           {% for t in tipos %}
           <div class="bg-white p-4 rounded-lg shadow">
             <h3 class="font-semibold">{{ t.nombre }}</h3>
@@ -142,7 +145,9 @@
           <p class="text-gray-500 col-span-full">No hay tipos registrados.</p>
           {% endfor %}
         </div>
+
         <div class="md:w-1/4 mt-4 md:mt-0">
+
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_tipo %}Editar Tipo{% else %}Nuevo Tipo de Producto{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -157,7 +162,9 @@
     {% elif section == 'categoria' %}
       <h2 class="text-2xl font-bold text-gray-800">Categorías</h2>
       <div class="md:flex gap-4">
+
         <div class="md:w-3/4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           {% for c in categorias %}
           <div class="bg-white p-4 rounded-lg shadow">
             <h3 class="font-semibold">{{ c.nombre }}</h3>
@@ -175,7 +182,9 @@
           <p class="text-gray-500 col-span-full">No hay categorías registradas.</p>
           {% endfor %}
         </div>
+
         <div class="md:w-1/4 mt-4 md:mt-0">
+
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_cat %}Editar Categoría{% else %}Nueva Categoría{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -190,7 +199,9 @@
     {% elif section == 'producto' %}
       <h2 class="text-2xl font-bold text-gray-800">Productos</h2>
       <div class="md:flex gap-4">
+
         <div class="md:w-3/4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           {% for p in productos %}
           <div class="bg-white p-4 rounded-lg shadow">
             <h3 class="font-semibold">{{ p.nombre }}</h3>
@@ -208,7 +219,9 @@
           <p class="text-gray-500 col-span-full">No hay productos registrados.</p>
           {% endfor %}
         </div>
+
         <div class="md:w-1/4 mt-4 md:mt-0">
+
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_prod %}Editar Producto{% else %}Nuevo Producto{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -223,7 +236,9 @@
     {% elif section == 'variacion' %}
       <h2 class="text-2xl font-bold text-gray-800">Variaciones</h2>
       <div class="md:flex gap-4">
+
         <div class="md:w-3/4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           {% for v in variaciones %}
           <div class="bg-white p-4 rounded-lg shadow text-sm">
             <h3 class="font-semibold">{{ v.producto }}</h3>
@@ -242,7 +257,9 @@
           <p class="text-gray-500 col-span-full">No hay variaciones registradas.</p>
           {% endfor %}
         </div>
+
         <div class="md:w-1/4 mt-4 md:mt-0">
+
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_var %}Editar Variación{% else %}Nueva Variación{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -257,7 +274,9 @@
     {% elif section == 'atributo' %}
       <h2 class="text-2xl font-bold text-gray-800">Atributos</h2>
       <div class="md:flex gap-4">
+
         <div class="md:w-3/4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           {% for a in atributos %}
           <div class="bg-white p-4 rounded-lg shadow">
             <h3 class="font-semibold">{{ a.nombre }}</h3>
@@ -275,7 +294,9 @@
           <p class="text-gray-500 col-span-full">No hay atributos registrados.</p>
           {% endfor %}
         </div>
+
         <div class="md:w-1/4 mt-4 md:mt-0">
+
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_atr %}Editar Atributo{% else %}Nuevo Atributo{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -290,7 +311,9 @@
     {% elif section == 'valor' %}
       <h2 class="text-2xl font-bold text-gray-800">Valores de Atributo</h2>
       <div class="md:flex gap-4">
+
         <div class="md:w-3/4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           {% for v in valores %}
           <div class="bg-white p-4 rounded-lg shadow text-sm">
             <h3 class="font-semibold">{{ v.valor }}</h3>
@@ -308,7 +331,9 @@
           <p class="text-gray-500 col-span-full">No hay valores registrados.</p>
           {% endfor %}
         </div>
+
         <div class="md:w-1/4 mt-4 md:mt-0">
+
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_val %}Editar Valor{% else %}Nuevo Valor{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -319,6 +344,8 @@
             </form>
           </div>
         </div>
+
+
       </div>
     {% elif section == 'cliente' %}
       <h2 class="text-2xl font-bold text-gray-800">Clientes Registrados</h2>

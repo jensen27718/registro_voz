@@ -348,8 +348,10 @@ def admin_dashboard(request):
         .prefetch_related('valores__atributo_def')
         .all()
     )
+
     atributos = AtributoDef.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
     valores = ValorAtributo.objects.select_related('atributo_def__tipo_producto').order_by('atributo_def__nombre', 'valor')
+
 
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
@@ -364,8 +366,10 @@ def admin_dashboard(request):
         'categorias': categorias,
         'productos': productos,
         'variaciones': variaciones,
+
         'atributos': atributos,
         'valores': valores,
+
         'estados': EstadoPedido.choices,
         'section': section,
     })
