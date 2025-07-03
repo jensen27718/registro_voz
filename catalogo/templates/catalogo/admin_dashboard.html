@@ -119,13 +119,109 @@
     </table>
   </div>
   {% else %}
-  <!-- ... resto de las secciones (tipo, categoria, etc.) sin cambios ... -->
-  <div class="bg-white p-6 rounded-lg shadow max-w-lg">
-    {% if section == 'tipo' %}<h2 class="text-2xl font-bold text-gray-800">Nuevo Tipo de Producto</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ tipo_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Tipo</button></form>{% endif %}
-    {% if section == 'categoria' %}<h2 class="text-2xl font-bold text-gray-800">Nueva Categoría</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ categoria_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Categoría</button></form>{% endif %}
-    {% if section == 'producto' %}<h2 class="text-2xl font-bold text-gray-800">Nuevo Producto</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ producto_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Producto</button></form>{% endif %}
-    {% if section == 'variacion' %}<h2 class="text-2xl font-bold text-gray-800">Nueva Variación</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ variacion_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Variación</button></form>{% endif %}
-    {% if section == 'cliente' %}<h2 class="text-2xl font-bold text-gray-800">Clientes Registrados</h2><div class="overflow-x-auto bg-white rounded-lg shadow mt-4"><table class="min-w-full text-sm text-left text-gray-700"><thead class="bg-gray-100 text-xs text-gray-700 uppercase"><tr><th class="px-6 py-3">ID</th><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Teléfono</th><th class="px-6 py-3">Dirección</th></tr></thead><tbody>{% for c in clientes %}<tr class="border-b hover:bg-gray-50"><td class="px-6 py-4">{{ c.id }}</td><td class="px-6 py-4">{{ c.nombre }}</td><td class="px-6 py-4">{{ c.telefono }}</td><td class="px-6 py-4">{{ c.direccion }}, {{ c.ciudad }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  <div class="space-y-8">
+    {% if section == 'tipo' %}
+      <h2 class="text-2xl font-bold text-gray-800">Tipos de Producto</h2>
+      <div class="overflow-x-auto bg-white rounded-lg shadow mb-4">
+        <table class="min-w-full text-sm text-left text-gray-700">
+          <thead class="bg-gray-100 text-xs uppercase">
+            <tr><th class="px-4 py-2">ID</th><th class="px-4 py-2">Nombre</th></tr>
+          </thead>
+          <tbody>
+            {% for t in tipos %}
+            <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">{{ t.id }}</td><td class="px-4 py-2">{{ t.nombre }}</td></tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-center py-4 text-gray-500">No hay tipos registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow max-w-lg">
+        <h2 class="text-xl font-bold text-gray-800">Nuevo Tipo de Producto</h2>
+        <form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ tipo_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Tipo</button></form>
+      </div>
+    {% elif section == 'categoria' %}
+      <h2 class="text-2xl font-bold text-gray-800">Categorías</h2>
+      <div class="overflow-x-auto bg-white rounded-lg shadow mb-4">
+        <table class="min-w-full text-sm text-left text-gray-700">
+          <thead class="bg-gray-100 text-xs uppercase">
+            <tr><th class="px-4 py-2">ID</th><th class="px-4 py-2">Tipo</th><th class="px-4 py-2">Nombre</th></tr>
+          </thead>
+          <tbody>
+            {% for c in categorias %}
+            <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">{{ c.id }}</td><td class="px-4 py-2">{{ c.tipo_producto.nombre }}</td><td class="px-4 py-2">{{ c.nombre }}</td></tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center py-4 text-gray-500">No hay categorías registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow max-w-lg">
+        <h2 class="text-xl font-bold text-gray-800">Nueva Categoría</h2>
+        <form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ categoria_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Categoría</button></form>
+      </div>
+    {% elif section == 'producto' %}
+      <h2 class="text-2xl font-bold text-gray-800">Productos</h2>
+      <div class="overflow-x-auto bg-white rounded-lg shadow mb-4">
+        <table class="min-w-full text-sm text-left text-gray-700">
+          <thead class="bg-gray-100 text-xs uppercase">
+            <tr><th class="px-4 py-2">ID</th><th class="px-4 py-2">Categoría</th><th class="px-4 py-2">Nombre</th></tr>
+          </thead>
+          <tbody>
+            {% for p in productos %}
+            <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">{{ p.id }}</td><td class="px-4 py-2">{{ p.categoria }}</td><td class="px-4 py-2">{{ p.nombre }}</td></tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center py-4 text-gray-500">No hay productos registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow max-w-lg">
+        <h2 class="text-xl font-bold text-gray-800">Nuevo Producto</h2>
+        <form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ producto_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Producto</button></form>
+      </div>
+    {% elif section == 'variacion' %}
+      <h2 class="text-2xl font-bold text-gray-800">Variaciones</h2>
+      <div class="overflow-x-auto bg-white rounded-lg shadow mb-4">
+        <table class="min-w-full text-sm text-left text-gray-700">
+          <thead class="bg-gray-100 text-xs uppercase">
+            <tr><th class="px-4 py-2">ID</th><th class="px-4 py-2">Producto</th><th class="px-4 py-2">Precio</th><th class="px-4 py-2">Valores</th></tr>
+          </thead>
+          <tbody>
+            {% for v in variaciones %}
+            <tr class="border-b hover:bg-gray-50">
+              <td class="px-4 py-2">{{ v.id }}</td>
+              <td class="px-4 py-2">{{ v.producto }}</td>
+              <td class="px-4 py-2">${{ v.precio_base|floatformat:0 }}</td>
+              <td class="px-4 py-2 text-sm">
+                {% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center py-4 text-gray-500">No hay variaciones registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow max-w-lg">
+        <h2 class="text-xl font-bold text-gray-800">Nueva Variación</h2>
+        <form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ variacion_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Variación</button></form>
+      </div>
+    {% elif section == 'cliente' %}
+      <h2 class="text-2xl font-bold text-gray-800">Clientes Registrados</h2>
+      <div class="overflow-x-auto bg-white rounded-lg shadow mb-4 mt-4">
+        <table class="min-w-full text-sm text-left text-gray-700">
+          <thead class="bg-gray-100 text-xs uppercase">
+            <tr><th class="px-6 py-3">ID</th><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Teléfono</th><th class="px-6 py-3">Dirección</th></tr>
+          </thead>
+          <tbody>
+            {% for c in clientes %}
+            <tr class="border-b hover:bg-gray-50"><td class="px-6 py-4">{{ c.id }}</td><td class="px-6 py-4">{{ c.nombre }}</td><td class="px-6 py-4">{{ c.telefono }}</td><td class="px-6 py-4">{{ c.direccion }}, {{ c.ciudad }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   </div>
   {% endif %}
 </div>
@@ -134,8 +230,27 @@
 {% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.querySelector('#id_var-valores')) {
-            new TomSelect('#id_var-valores', { plugins: ['remove_button'] });
+        const valoresSel = document.querySelector('#id_var-valores');
+        const productoSel = document.querySelector('#id_var-producto');
+        let tom;
+        if (valoresSel) {
+            tom = new TomSelect(valoresSel, { plugins: ['remove_button'] });
+        }
+        function cargarValores(prodId) {
+            if (!tom || !prodId) { if(tom) tom.clearOptions(); return; }
+            fetch('{% url "catalogo:valores_por_producto" %}?producto_id=' + prodId)
+                .then(r => r.json())
+                .then(data => {
+                    tom.clearOptions();
+                    data.valores.forEach(v => tom.addOption({value: v.id, text: v.label}));
+                    tom.refreshOptions(false);
+                });
+        }
+        if (productoSel) {
+            productoSel.addEventListener('change', e => cargarValores(e.target.value));
+            if (productoSel.value) {
+                cargarValores(productoSel.value);
+            }
         }
         document.querySelectorAll('.toggle-items').forEach(btn => {
             btn.addEventListener('click', (event) => {
