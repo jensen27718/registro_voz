@@ -287,7 +287,15 @@ def admin_dashboard(request):
         .order_by('-fecha')
     )
     clientes = Cliente.objects.all().order_by('nombre')
-    
+    tipos = TipoProducto.objects.all().order_by('nombre')
+    categorias = Categoria.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
+    productos = Producto.objects.select_related('categoria__tipo_producto').order_by('categoria__nombre', 'nombre')
+    variaciones = (
+        VariacionProducto.objects.select_related('producto__categoria__tipo_producto')
+        .prefetch_related('valores__atributo_def')
+        .all()
+    )
+
     return render(request, 'catalogo/admin_dashboard.html', {
         'pedidos': pedidos,
         'tipo_form': tipo_form,
@@ -295,6 +303,10 @@ def admin_dashboard(request):
         'producto_form': producto_form,
         'variacion_form': variacion_form,
         'clientes': clientes,
+        'tipos': tipos,
+        'categorias': categorias,
+        'productos': productos,
+        'variaciones': variaciones,
         'estados': EstadoPedido.choices,
         'section': section,
     })
@@ -347,3 +359,30 @@ def generar_pedido_pdf(request, pedido_id):
         return response
     
     return HttpResponse("Error al generar el PDF", status=500)
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def valores_por_producto(request):
+    """Devuelve los valores de atributo asociados al tipo del producto."""
+    producto_id = request.GET.get('producto_id')
+    if not producto_id:
+        return JsonResponse({'error': 'producto_id requerido'}, status=400)
+
+    try:
+        producto = Producto.objects.select_related('categoria__tipo_producto').get(id=producto_id)
+    except Producto.DoesNotExist:
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+
+    valores = ValorAtributo.objects.filter(
+        atributo_def__tipo_producto=producto.categoria.tipo_producto
+    ).values('id', 'valor', 'atributo_def__nombre')
+
+    data = [
+        {
+            'id': v['id'],
+            'label': f"{v['atributo_def__nombre']}: {v['valor']}"
+        }
+        for v in valores
+    ]
+    return JsonResponse({'valores': data})
