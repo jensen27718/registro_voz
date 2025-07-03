@@ -17,6 +17,8 @@
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'categoria' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Categorías</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=producto" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'producto' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Productos</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'variacion' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Variaciones</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=atributo" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'atributo' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Atributos</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=valor" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'valor' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Valores</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'cliente' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Clientes</a></li>
   </ul>
 </nav>
@@ -119,13 +121,220 @@
     </table>
   </div>
   {% else %}
-  <!-- ... resto de las secciones (tipo, categoria, etc.) sin cambios ... -->
-  <div class="bg-white p-6 rounded-lg shadow max-w-lg">
-    {% if section == 'tipo' %}<h2 class="text-2xl font-bold text-gray-800">Nuevo Tipo de Producto</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ tipo_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Tipo</button></form>{% endif %}
-    {% if section == 'categoria' %}<h2 class="text-2xl font-bold text-gray-800">Nueva Categoría</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ categoria_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Categoría</button></form>{% endif %}
-    {% if section == 'producto' %}<h2 class="text-2xl font-bold text-gray-800">Nuevo Producto</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ producto_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Producto</button></form>{% endif %}
-    {% if section == 'variacion' %}<h2 class="text-2xl font-bold text-gray-800">Nueva Variación</h2><form method="post" class="space-y-4 mt-4">{% csrf_token %}{{ variacion_form.as_p }}<button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar Variación</button></form>{% endif %}
-    {% if section == 'cliente' %}<h2 class="text-2xl font-bold text-gray-800">Clientes Registrados</h2><div class="overflow-x-auto bg-white rounded-lg shadow mt-4"><table class="min-w-full text-sm text-left text-gray-700"><thead class="bg-gray-100 text-xs text-gray-700 uppercase"><tr><th class="px-6 py-3">ID</th><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Teléfono</th><th class="px-6 py-3">Dirección</th></tr></thead><tbody>{% for c in clientes %}<tr class="border-b hover:bg-gray-50"><td class="px-6 py-4">{{ c.id }}</td><td class="px-6 py-4">{{ c.nombre }}</td><td class="px-6 py-4">{{ c.telefono }}</td><td class="px-6 py-4">{{ c.direccion }}, {{ c.ciudad }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  <div class="space-y-8">
+    {% if section == 'tipo' %}
+      <h2 class="text-2xl font-bold text-gray-800">Tipos de Producto</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for t in tipos %}
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-semibold">{{ t.nombre }}</h3>
+            <div class="mt-2 flex justify-end gap-2 text-xs">
+              <a href="?section=tipo&edit_tipo={{ t.id }}" onclick="return confirm('Editar este tipo puede afectar categorías y productos asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+              <form method="post" onsubmit="return confirm('Eliminar este tipo eliminará sus categorías y productos asociados. ¿Continuar?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_tipo" value="{{ t.id }}">
+                <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500 col-span-full">No hay tipos registrados.</p>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/3 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_tipo %}Editar Tipo{% else %}Nuevo Tipo de Producto{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ tipo_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_tipo %}<a href="?section=tipo" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% elif section == 'categoria' %}
+      <h2 class="text-2xl font-bold text-gray-800">Categorías</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for c in categorias %}
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-semibold">{{ c.nombre }}</h3>
+            <p class="text-sm text-gray-500">{{ c.tipo_producto.nombre }}</p>
+            <div class="mt-2 flex justify-end gap-2 text-xs">
+              <a href="?section=categoria&edit_cat={{ c.id }}" onclick="return confirm('Editar esta categoría puede afectar productos asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+              <form method="post" onsubmit="return confirm('Eliminar esta categoría eliminará los productos asociados. ¿Continuar?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_cat" value="{{ c.id }}">
+                <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500 col-span-full">No hay categorías registradas.</p>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/3 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_cat %}Editar Categoría{% else %}Nueva Categoría{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ categoria_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_cat %}<a href="?section=categoria" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% elif section == 'producto' %}
+      <h2 class="text-2xl font-bold text-gray-800">Productos</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for p in productos %}
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-semibold">{{ p.nombre }}</h3>
+            <p class="text-sm text-gray-500">{{ p.categoria }}</p>
+            <div class="mt-2 flex justify-end gap-2 text-xs">
+              <a href="?section=producto&edit_prod={{ p.id }}" onclick="return confirm('Editar este producto puede afectar variaciones asociadas. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+              <form method="post" onsubmit="return confirm('Eliminar este producto eliminará sus variaciones. ¿Continuar?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_prod" value="{{ p.id }}">
+                <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500 col-span-full">No hay productos registrados.</p>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/3 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_prod %}Editar Producto{% else %}Nuevo Producto{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ producto_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_prod %}<a href="?section=producto" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% elif section == 'variacion' %}
+      <h2 class="text-2xl font-bold text-gray-800">Variaciones</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for v in variaciones %}
+          <div class="bg-white p-4 rounded-lg shadow text-sm">
+            <h3 class="font-semibold">{{ v.producto }}</h3>
+            <p class="text-gray-500">${{ v.precio_base|floatformat:0 }}</p>
+            <p class="mt-1">{% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+            <div class="mt-2 flex justify-end gap-2 text-xs">
+              <a href="?section=variacion&edit_var={{ v.id }}" onclick="return confirm('Editar esta variación puede afectar pedidos existentes. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+              <form method="post" onsubmit="return confirm('Eliminar esta variación podría afectar pedidos. ¿Continuar?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_var" value="{{ v.id }}">
+                <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500 col-span-full">No hay variaciones registradas.</p>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/3 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_var %}Editar Variación{% else %}Nueva Variación{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ variacion_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_var %}<a href="?section=variacion" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% elif section == 'atributo' %}
+      <h2 class="text-2xl font-bold text-gray-800">Atributos</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for a in atributos %}
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-semibold">{{ a.nombre }}</h3>
+            <p class="text-sm text-gray-500">{{ a.tipo_producto.nombre }}</p>
+            <div class="mt-2 flex justify-end gap-2 text-xs">
+              <a href="?section=atributo&edit_atr={{ a.id }}" onclick="return confirm('Editar este atributo afectará valores asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+              <form method="post" onsubmit="return confirm('Eliminar este atributo eliminará sus valores. ¿Continuar?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_atr" value="{{ a.id }}">
+                <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500 col-span-full">No hay atributos registrados.</p>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/3 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_atr %}Editar Atributo{% else %}Nuevo Atributo{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ atributo_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_atr %}<a href="?section=atributo" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% elif section == 'valor' %}
+      <h2 class="text-2xl font-bold text-gray-800">Valores de Atributo</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for v in valores %}
+          <div class="bg-white p-4 rounded-lg shadow text-sm">
+            <h3 class="font-semibold">{{ v.valor }}</h3>
+            <p class="text-gray-500">{{ v.atributo_def.nombre }}</p>
+            <div class="mt-2 flex justify-end gap-2 text-xs">
+              <a href="?section=valor&edit_val={{ v.id }}" onclick="return confirm('Editar este valor afectará variaciones que lo usan. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+              <form method="post" onsubmit="return confirm('Eliminar este valor podría afectar variaciones. ¿Continuar?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_val" value="{{ v.id }}">
+                <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500 col-span-full">No hay valores registrados.</p>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/3 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_val %}Editar Valor{% else %}Nuevo Valor{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ valor_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_val %}<a href="?section=valor" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    {% elif section == 'cliente' %}
+      <h2 class="text-2xl font-bold text-gray-800">Clientes Registrados</h2>
+      <div class="overflow-x-auto bg-white rounded-lg shadow mb-4 mt-4">
+        <table class="min-w-full text-sm text-left text-gray-700">
+          <thead class="bg-gray-100 text-xs uppercase">
+            <tr><th class="px-6 py-3">ID</th><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Teléfono</th><th class="px-6 py-3">Dirección</th></tr>
+          </thead>
+          <tbody>
+            {% for c in clientes %}
+            <tr class="border-b hover:bg-gray-50"><td class="px-6 py-4">{{ c.id }}</td><td class="px-6 py-4">{{ c.nombre }}</td><td class="px-6 py-4">{{ c.telefono }}</td><td class="px-6 py-4">{{ c.direccion }}, {{ c.ciudad }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   </div>
   {% endif %}
 </div>
@@ -134,8 +343,27 @@
 {% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.querySelector('#id_var-valores')) {
-            new TomSelect('#id_var-valores', { plugins: ['remove_button'] });
+        const valoresSel = document.querySelector('#id_var-valores');
+        const productoSel = document.querySelector('#id_var-producto');
+        let tom;
+        if (valoresSel) {
+            tom = new TomSelect(valoresSel, { plugins: ['remove_button'] });
+        }
+        function cargarValores(prodId) {
+            if (!tom || !prodId) { if(tom) tom.clearOptions(); return; }
+            fetch('{% url "catalogo:valores_por_producto" %}?producto_id=' + prodId)
+                .then(r => r.json())
+                .then(data => {
+                    tom.clearOptions();
+                    data.valores.forEach(v => tom.addOption({value: v.id, text: v.label}));
+                    tom.refreshOptions(false);
+                });
+        }
+        if (productoSel) {
+            productoSel.addEventListener('change', e => cargarValores(e.target.value));
+            if (productoSel.value) {
+                cargarValores(productoSel.value);
+            }
         }
         document.querySelectorAll('.toggle-items').forEach(btn => {
             btn.addEventListener('click', (event) => {
