@@ -1,5 +1,12 @@
 from django import forms
-from .models import TipoProducto, Categoria, Producto, VariacionProducto, ValorAtributo
+from .models import (
+    TipoProducto,
+    Categoria,
+    Producto,
+    AtributoDef,
+    ValorAtributo,
+    VariacionProducto,
+)
 
 
 
@@ -31,6 +38,20 @@ class ProductoForm(BaseStyledForm):
     class Meta:
         model = Producto
         fields = ['categoria', 'referencia', 'nombre', 'foto_url']
+
+
+class AtributoDefForm(BaseStyledForm):
+
+    class Meta:
+        model = AtributoDef
+        fields = ['tipo_producto', 'nombre']
+
+
+class ValorAtributoForm(BaseStyledForm):
+
+    class Meta:
+        model = ValorAtributo
+        fields = ['atributo_def', 'valor', 'display']
 
 
 class VariacionProductoForm(BaseStyledForm):
