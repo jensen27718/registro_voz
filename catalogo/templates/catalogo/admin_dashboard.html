@@ -168,30 +168,42 @@
       <h2 class="text-2xl font-bold text-gray-800">Categorías</h2>
       <div class="md:flex gap-4">
 
-        <div class="md:w-3/4 overflow-x-auto">
-          <table class="min-w-full text-sm text-left text-gray-700">
-            <thead class="bg-gray-100 text-xs uppercase">
-              <tr><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Acciones</th></tr>
-            </thead>
-            <tbody>
-              {% for c in categorias %}
-              <tr class="border-b hover:bg-gray-50">
-                <td class="px-6 py-4">{{ c.nombre }}</td>
-                <td class="px-6 py-4">{{ c.tipo_producto.nombre }}</td>
-                <td class="px-6 py-4">
-                  <a href="?section=categoria&edit_cat={{ c.id }}" onclick="return confirm('Editar esta categoría puede afectar productos asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
-                  <form method="post" class="inline" onsubmit="return confirm('Eliminar esta categoría eliminará los productos asociados. ¿Continuar?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="delete_cat" value="{{ c.id }}">
-                    <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
-                  </form>
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center py-4 text-gray-500">No hay categorías registradas.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+
+        <div class="md:w-3/4 space-y-4">
+          {% regroup categorias by tipo_producto as cat_por_tipo %}
+          {% for g in cat_por_tipo %}
+          <div class="border rounded">
+            <div class="bg-gray-50 flex justify-between items-center px-4 py-2">
+              <h3 class="font-semibold">{{ g.grouper.nombre }}</h3>
+              <button class="accordion-toggle text-sm text-blue-600" data-target="cats-{{ forloop.counter }}">Ver</button>
+            </div>
+            <div id="cats-{{ forloop.counter }}" class="hidden overflow-x-auto">
+              <table class="min-w-full text-sm text-left text-gray-700">
+                <thead class="bg-gray-100 text-xs uppercase">
+                  <tr><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {% for c in g.list %}
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="px-6 py-4">{{ c.nombre }}</td>
+                    <td class="px-6 py-4">
+                      <a href="?section=categoria&edit_cat={{ c.id }}" onclick="return confirm('Editar esta categoría puede afectar productos asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+                      <form method="post" class="inline" onsubmit="return confirm('Eliminar esta categoría eliminará los productos asociados. ¿Continuar?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_cat" value="{{ c.id }}">
+                        <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="2" class="text-center py-4 text-gray-500">No hay categorías registradas.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -214,11 +226,16 @@
         <div class="md:w-3/4 overflow-x-auto">
           <table class="min-w-full text-sm text-left text-gray-700">
             <thead class="bg-gray-100 text-xs uppercase">
-              <tr><th class="px-6 py-3">Referencia</th><th class="px-6 py-3">Categoría</th><th class="px-6 py-3">Acciones</th></tr>
+
+              <tr><th class="px-6 py-3">Foto</th><th class="px-6 py-3">Referencia</th><th class="px-6 py-3">Categoría</th><th class="px-6 py-3">Acciones</th></tr>
+
             </thead>
             <tbody>
               {% for p in productos %}
               <tr class="border-b hover:bg-gray-50">
+
+                <td class="px-6 py-2"><img src="{{ p.foto_url }}" alt="{{ p.referencia }}" class="h-10 w-10 object-cover"></td>
+
                 <td class="px-6 py-4">{{ p.referencia }}</td>
                 <td class="px-6 py-4">{{ p.categoria }}</td>
                 <td class="px-6 py-4">
@@ -231,7 +248,9 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="3" class="text-center py-4 text-gray-500">No hay productos registrados.</td></tr>
+
+              <tr><td colspan="4" class="text-center py-4 text-gray-500">No hay productos registrados.</td></tr>
+
               {% endfor %}
             </tbody>
           </table>
@@ -254,31 +273,46 @@
       <h2 class="text-2xl font-bold text-gray-800">Variaciones</h2>
       <div class="md:flex gap-4">
 
-        <div class="md:w-3/4 overflow-x-auto">
-          <table class="min-w-full text-sm text-left text-gray-700">
-            <thead class="bg-gray-100 text-xs uppercase">
-              <tr><th class="px-6 py-3">Producto</th><th class="px-6 py-3">Precio</th><th class="px-6 py-3">Valores</th><th class="px-6 py-3">Acciones</th></tr>
-            </thead>
-            <tbody>
-              {% for v in variaciones %}
-              <tr class="border-b hover:bg-gray-50 text-sm">
-                <td class="px-6 py-4">{{ v.producto }}</td>
-                <td class="px-6 py-4">${{ v.precio_base|floatformat:0 }}</td>
-                <td class="px-6 py-4">{% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-                <td class="px-6 py-4">
-                  <a href="?section=variacion&edit_var={{ v.id }}" onclick="return confirm('Editar esta variación puede afectar pedidos existentes. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
-                  <form method="post" class="inline" onsubmit="return confirm('Eliminar esta variación podría afectar pedidos. ¿Continuar?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="delete_var" value="{{ v.id }}">
-                    <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
-                  </form>
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="4" class="text-center py-4 text-gray-500">No hay variaciones registradas.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+
+        <div class="md:w-3/4 space-y-4">
+          {% regroup variaciones by producto as vars_por_prod %}
+          {% for g in vars_por_prod %}
+          <div class="border rounded">
+            <div class="bg-gray-50 flex justify-between items-center px-4 py-2">
+              <div class="flex items-center gap-2">
+                <img src="{{ g.grouper.foto_url }}" alt="{{ g.grouper.referencia }}" class="h-8 w-8 object-cover">
+                <span class="font-semibold">{{ g.grouper.referencia }}</span>
+              </div>
+              <button class="accordion-toggle text-sm text-blue-600" data-target="vars-{{ forloop.counter }}">Ver</button>
+            </div>
+            <div id="vars-{{ forloop.counter }}" class="hidden overflow-x-auto">
+              <table class="min-w-full text-sm text-left text-gray-700">
+                <thead class="bg-gray-100 text-xs uppercase">
+                  <tr><th class="px-6 py-3">Precio</th><th class="px-6 py-3">Valores</th><th class="px-6 py-3">Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {% for v in g.list %}
+                  <tr class="border-b hover:bg-gray-50 text-sm">
+                    <td class="px-6 py-4">${{ v.precio_base|floatformat:0 }}</td>
+                    <td class="px-6 py-4">{% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    <td class="px-6 py-4">
+                      <a href="?section=variacion&edit_var={{ v.id }}" onclick="return confirm('Editar esta variación puede afectar pedidos existentes. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+                      <form method="post" class="inline" onsubmit="return confirm('Eliminar esta variación podría afectar pedidos. ¿Continuar?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_var" value="{{ v.id }}">
+                        <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500">No hay variaciones registradas.</p>
+          {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -298,30 +332,42 @@
       <h2 class="text-2xl font-bold text-gray-800">Atributos</h2>
       <div class="md:flex gap-4">
 
-        <div class="md:w-3/4 overflow-x-auto">
-          <table class="min-w-full text-sm text-left text-gray-700">
-            <thead class="bg-gray-100 text-xs uppercase">
-              <tr><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Acciones</th></tr>
-            </thead>
-            <tbody>
-              {% for a in atributos %}
-              <tr class="border-b hover:bg-gray-50">
-                <td class="px-6 py-4">{{ a.nombre }}</td>
-                <td class="px-6 py-4">{{ a.tipo_producto.nombre }}</td>
-                <td class="px-6 py-4">
-                  <a href="?section=atributo&edit_atr={{ a.id }}" onclick="return confirm('Editar este atributo afectará valores asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
-                  <form method="post" class="inline" onsubmit="return confirm('Eliminar este atributo eliminará sus valores. ¿Continuar?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="delete_atr" value="{{ a.id }}">
-                    <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
-                  </form>
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center py-4 text-gray-500">No hay atributos registrados.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+
+        <div class="md:w-3/4 space-y-4">
+          {% regroup atributos by tipo_producto as atr_por_tipo %}
+          {% for g in atr_por_tipo %}
+          <div class="border rounded">
+            <div class="bg-gray-50 flex justify-between items-center px-4 py-2">
+              <h3 class="font-semibold">{{ g.grouper.nombre }}</h3>
+              <button class="accordion-toggle text-sm text-blue-600" data-target="atr-{{ forloop.counter }}">Ver</button>
+            </div>
+            <div id="atr-{{ forloop.counter }}" class="hidden overflow-x-auto">
+              <table class="min-w-full text-sm text-left text-gray-700">
+                <thead class="bg-gray-100 text-xs uppercase">
+                  <tr><th class="px-6 py-3">Nombre</th><th class="px-6 py-3">Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {% for a in g.list %}
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="px-6 py-4">{{ a.nombre }}</td>
+                    <td class="px-6 py-4">
+                      <a href="?section=atributo&edit_atr={{ a.id }}" onclick="return confirm('Editar este atributo afectará valores asociados. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+                      <form method="post" class="inline" onsubmit="return confirm('Eliminar este atributo eliminará sus valores. ¿Continuar?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_atr" value="{{ a.id }}">
+                        <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-gray-500">No hay atributos registrados.</p>
+          {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -341,30 +387,51 @@
       <h2 class="text-2xl font-bold text-gray-800">Valores de Atributo</h2>
       <div class="md:flex gap-4">
 
-        <div class="md:w-3/4 overflow-x-auto">
-          <table class="min-w-full text-sm text-left text-gray-700">
-            <thead class="bg-gray-100 text-xs uppercase">
-              <tr><th class="px-6 py-3">Valor</th><th class="px-6 py-3">Atributo</th><th class="px-6 py-3">Acciones</th></tr>
-            </thead>
-            <tbody>
-              {% for v in valores %}
-              <tr class="border-b hover:bg-gray-50 text-sm">
-                <td class="px-6 py-4">{{ v.valor }}</td>
-                <td class="px-6 py-4">{{ v.atributo_def.nombre }}</td>
-                <td class="px-6 py-4">
-                  <a href="?section=valor&edit_val={{ v.id }}" onclick="return confirm('Editar este valor afectará variaciones que lo usan. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
-                  <form method="post" class="inline" onsubmit="return confirm('Eliminar este valor podría afectar variaciones. ¿Continuar?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="delete_val" value="{{ v.id }}">
-                    <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
-                  </form>
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center py-4 text-gray-500">No hay valores registrados.</td></tr>
+
+        <div class="md:w-3/4 space-y-4">
+          {% regroup valores by atributo_def.tipo_producto as valores_por_tipo %}
+          {% for tipo in valores_por_tipo %}
+          <div class="border rounded">
+            <div class="bg-gray-50 flex justify-between items-center px-4 py-2">
+              <h3 class="font-semibold">{{ tipo.grouper.nombre }}</h3>
+              <button class="accordion-toggle text-sm text-blue-600" data-target="val-tipo-{{ forloop.counter }}">Ver</button>
+            </div>
+            <div id="val-tipo-{{ forloop.counter }}" class="hidden space-y-2">
+              {% regroup tipo.list by atributo_def as valores_por_atr %}
+              {% for grupo in valores_por_atr %}
+              <div class="border-t">
+                <div class="bg-gray-100 flex justify-between items-center px-4 py-2">
+                  <h4 class="font-semibold">{{ grupo.grouper.nombre }}</h4>
+                  <button class="accordion-toggle text-xs text-blue-600" data-target="val-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">Ver</button>
+                </div>
+                <div id="val-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="hidden overflow-x-auto">
+                  <table class="min-w-full text-sm text-left text-gray-700">
+                    <thead class="bg-gray-50 text-xs uppercase">
+                      <tr><th class="px-6 py-3">Valor</th><th class="px-6 py-3">Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                      {% for v in grupo.list %}
+                      <tr class="border-b hover:bg-gray-50 text-sm">
+                        <td class="px-6 py-4">{{ v.valor }}</td>
+                        <td class="px-6 py-4">
+                          <a href="?section=valor&edit_val={{ v.id }}" onclick="return confirm('Editar este valor afectará variaciones que lo usan. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
+                          <form method="post" class="inline" onsubmit="return confirm('Eliminar este valor podría afectar variaciones. ¿Continuar?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_val" value="{{ v.id }}">
+                            <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+                          </form>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               {% endfor %}
-            </tbody>
-          </table>
+            </div>
+          </div>
+          {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -442,6 +509,19 @@
                         btn.innerHTML = 'Ver Items';
                         btn.classList.remove('bg-blue-100');
                     }
+                }
+            });
+        });
+        document.querySelectorAll('.accordion-toggle').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = btn.dataset.target;
+                const el = document.getElementById(targetId);
+                if (el) {
+                    const hidden = el.classList.contains('hidden');
+                    el.classList.toggle('hidden');
+                    btn.classList.toggle('bg-blue-100', hidden);
+                    btn.innerHTML = hidden ? 'Ocultar' : 'Ver';
                 }
             });
         });
