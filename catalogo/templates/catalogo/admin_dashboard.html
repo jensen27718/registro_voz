@@ -273,7 +273,6 @@
       <h2 class="text-2xl font-bold text-gray-800">Variaciones</h2>
       <div class="md:flex gap-4">
 
-
         <div class="md:w-3/4 space-y-4">
           {% regroup variaciones by producto as vars_por_prod %}
           {% for g in vars_por_prod %}
@@ -331,7 +330,6 @@
 {% elif section == 'atributo' %}
       <h2 class="text-2xl font-bold text-gray-800">Atributos</h2>
       <div class="md:flex gap-4">
-
 
         <div class="md:w-3/4 space-y-4">
           {% regroup atributos by tipo_producto as atr_por_tipo %}

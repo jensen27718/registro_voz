@@ -11,6 +11,8 @@ urlpatterns = [
     path('api/cliente/detail/', views.cliente_detail, name='cliente_detail'),
     path('api/cart/', views.cart_view, name='cart_view'),
     path('api/pedido/', views.pedido_create, name='pedido_create'),
+    path('api/productos/', views.api_productos, name='api_productos'),
+    path('api/productos/<int:producto_id>/', views.api_producto_detail, name='api_producto_detail'),
 
     # Rutas del Admin Dashboard
     path('admin/', views.admin_dashboard, name='admin_dashboard'),

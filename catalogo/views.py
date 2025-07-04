@@ -450,3 +450,121 @@ def valores_por_producto(request):
         for v in valores
     ]
     return JsonResponse({'valores': data})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def api_productos(request):
+    """Lista de productos o creación de uno nuevo."""
+    if request.method == "GET":
+        productos = (
+            Producto.objects.select_related("categoria")
+            .order_by("categoria__nombre", "referencia")
+        )
+        data = [
+            {
+                "id": p.id,
+                "categoriaId": p.categoria_id,
+                "categoria": p.categoria.nombre,
+                "referencia": p.referencia,
+                "nombre": p.nombre,
+                "foto_url": p.foto_url,
+            }
+            for p in productos
+        ]
+        return JsonResponse({"productos": data})
+
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("invalid json")
+
+    categoria_id = payload.get("categoriaId")
+    referencia = payload.get("referencia", "").strip()
+    nombre = payload.get("nombre", "").strip()
+    foto_url = payload.get("foto_url", "").strip()
+
+    if not categoria_id or not referencia:
+        return HttpResponseBadRequest("categoriaId y referencia requeridos")
+
+    try:
+        categoria = Categoria.objects.get(id=categoria_id)
+    except Categoria.DoesNotExist:
+        return HttpResponseBadRequest("categoria no encontrada")
+
+    producto = Producto.objects.create(
+        categoria=categoria,
+        referencia=referencia,
+        nombre=nombre,
+        foto_url=foto_url,
+    )
+
+    return JsonResponse(
+        {
+            "id": producto.id,
+            "categoriaId": producto.categoria_id,
+            "categoria": categoria.nombre,
+            "referencia": producto.referencia,
+            "nombre": producto.nombre,
+            "foto_url": producto.foto_url,
+        },
+        status=201,
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+def api_producto_detail(request, producto_id):
+    """Obtiene, actualiza o elimina un producto específico."""
+    try:
+        producto = Producto.objects.select_related("categoria").get(id=producto_id)
+    except Producto.DoesNotExist:
+        return HttpResponseNotFound("producto no encontrado")
+
+    if request.method == "GET":
+        return JsonResponse(
+            {
+                "id": producto.id,
+                "categoriaId": producto.categoria_id,
+                "categoria": producto.categoria.nombre,
+                "referencia": producto.referencia,
+                "nombre": producto.nombre,
+                "foto_url": producto.foto_url,
+            }
+        )
+
+    if request.method == "DELETE":
+        producto.delete()
+        return JsonResponse({"status": "deleted"})
+
+    # PUT
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("invalid json")
+
+    if "categoriaId" in payload:
+        try:
+            categoria = Categoria.objects.get(id=payload["categoriaId"])
+            producto.categoria = categoria
+        except Categoria.DoesNotExist:
+            return HttpResponseBadRequest("categoria no encontrada")
+
+    if "referencia" in payload:
+        producto.referencia = payload["referencia"].strip()
+    if "nombre" in payload:
+        producto.nombre = payload["nombre"].strip()
+    if "foto_url" in payload:
+        producto.foto_url = payload["foto_url"].strip()
+    producto.save()
+
+    return JsonResponse(
+        {
+            "id": producto.id,
+            "categoriaId": producto.categoria_id,
+            "categoria": producto.categoria.nombre,
+            "referencia": producto.referencia,
+            "nombre": producto.nombre,
+            "foto_url": producto.foto_url,
+        }
+    )
