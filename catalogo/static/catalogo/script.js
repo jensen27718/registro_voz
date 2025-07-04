@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!producto) return;
         state.modalSelection = { productoId, variation: null, quantity: 1, selectedAtributos: {} };
         modalProductImg.src = producto.foto_url;
-        modalProductName.textContent = producto.nombre;
+        modalProductName.textContent = producto.referencia;
         const dynamicContent = modalProductAttributesContainer.querySelector('#dynamic-attributes');
         if (dynamicContent) dynamicContent.remove();
         const variaciones = DATA.variacionesProducto.filter(v => v.productoId === productoId);
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.cart.items.push({
                 variationId: variation.id,
                 productoId: producto.id,
-                name: producto.nombre,
+                name: producto.referencia,
                 image: producto.foto_url,
                 priceBase: variation.precioBase,
                 quantity,
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         productsTitle.textContent = cat ? cat.nombre : '';
         productsGrid.innerHTML = DATA.productos
             .filter(p => p.categoriaId === categoriaId)
-            .map(prod => `<div class="product-card cursor-pointer" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.nombre}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.nombre}</h4></div></div>`)
+            .map(prod => `<div class="product-card cursor-pointer" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.referencia}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.referencia}</h4></div></div>`)
             .join('');
         showPage('products-page');
     };
