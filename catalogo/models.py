@@ -60,8 +60,8 @@ class Producto(models.Model):
         ordering = ["nombre"]
 
     def __str__(self):
-        # Mostrar la categoría para una mejor referencia en el admin
-        return f"{self.categoria.nombre} - {self.nombre}"
+        """Mostrar solo la referencia junto con la categoría."""
+        return f"{self.categoria.nombre} - {self.referencia}"
 
 
 class AtributoDef(models.Model):
@@ -111,9 +111,9 @@ class VariacionProducto(models.Model):
     valores = models.ManyToManyField(ValorAtributo, related_name="variaciones")
 
     def __str__(self):
-        # Genera una descripción de la variación para el admin
+        """Descripción de la variación usando referencia y categoría."""
         valores_str = ", ".join([v.valor for v in self.valores.all()])
-        return f"{self.producto.nombre} ({valores_str})"
+        return f"{self.producto.categoria.nombre}: {self.producto.referencia} ({valores_str})"
 
 
 class Carrito(models.Model):
