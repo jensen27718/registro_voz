@@ -59,6 +59,7 @@ def build_catalog_data():
                 'id': p.id,
                 'categoriaId': p.categoria_id,
                 'nombre': p.nombre,
+                'referencia': p.referencia,
                 'foto_url': p.foto_url,
             }
             for p in Producto.objects.all()
