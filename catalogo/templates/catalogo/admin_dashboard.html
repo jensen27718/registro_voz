@@ -168,6 +168,7 @@
       <h2 class="text-2xl font-bold text-gray-800">Categorías</h2>
       <div class="md:flex gap-4">
 
+
         <div class="md:w-3/4 space-y-4">
           {% regroup categorias by tipo_producto as cat_por_tipo %}
           {% for g in cat_por_tipo %}
@@ -202,6 +203,7 @@
             </div>
           </div>
           {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -224,12 +226,16 @@
         <div class="md:w-3/4 overflow-x-auto">
           <table class="min-w-full text-sm text-left text-gray-700">
             <thead class="bg-gray-100 text-xs uppercase">
+
               <tr><th class="px-6 py-3">Foto</th><th class="px-6 py-3">Referencia</th><th class="px-6 py-3">Categoría</th><th class="px-6 py-3">Acciones</th></tr>
+
             </thead>
             <tbody>
               {% for p in productos %}
               <tr class="border-b hover:bg-gray-50">
+
                 <td class="px-6 py-2"><img src="{{ p.foto_url }}" alt="{{ p.referencia }}" class="h-10 w-10 object-cover"></td>
+
                 <td class="px-6 py-4">{{ p.referencia }}</td>
                 <td class="px-6 py-4">{{ p.categoria }}</td>
                 <td class="px-6 py-4">
@@ -242,7 +248,9 @@
                 </td>
               </tr>
               {% empty %}
+
               <tr><td colspan="4" class="text-center py-4 text-gray-500">No hay productos registrados.</td></tr>
+
               {% endfor %}
             </tbody>
           </table>
@@ -303,6 +311,7 @@
           {% empty %}
           <p class="text-gray-500">No hay variaciones registradas.</p>
           {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -356,6 +365,7 @@
           {% empty %}
           <p class="text-gray-500">No hay atributos registrados.</p>
           {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
@@ -374,6 +384,7 @@
 {% elif section == 'valor' %}
       <h2 class="text-2xl font-bold text-gray-800">Valores de Atributo</h2>
       <div class="md:flex gap-4">
+
 
         <div class="md:w-3/4 space-y-4">
           {% regroup valores by atributo_def.tipo_producto as valores_por_tipo %}
@@ -418,6 +429,7 @@
             </div>
           </div>
           {% endfor %}
+
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
