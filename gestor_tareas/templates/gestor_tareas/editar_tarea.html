@@ -29,6 +29,11 @@
                     <label for="telefono" class="block mb-1 text-slate-400 font-medium">Teléfono (Opcional)</label>
                     <input type="tel" name="telefono" id="telefono" value="{{ tarea.telefono|default_if_none:'' }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
                 </div>
+                <!-- Orden -->
+                <div>
+                    <label for="orden" class="block mb-1 text-slate-400 font-medium">Orden</label>
+                    <input type="number" name="orden" id="orden" value="{{ tarea.orden|default_if_none:'' }}" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
                 <!-- Tipo de Trabajo -->
                 <div class="sm:col-span-2">
                     <label for="tipo" class="block mb-1 text-slate-400 font-medium">Tipo de Trabajo</label>
