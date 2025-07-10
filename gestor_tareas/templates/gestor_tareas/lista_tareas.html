@@ -47,7 +47,22 @@
                         </td>
                         
                         <td class="px-4 py-3">{{ tarea.tipo.nombre|default:"--" }}</td>
-                        <td class="px-4 py-3 text-slate-400 italic">{{ tarea.descripcion|truncatewords:10|default:"--" }}</td>
+                        <td class="px-4 py-3 text-slate-400 italic">
+                            {% with tarea.descripcion|wordcount as cant_palabras %}
+                                <span id="desc-short-{{ tarea.id }}">
+                                    {{ tarea.descripcion|truncatewords:10|default:"--" }}
+                                    {% if cant_palabras > 10 %}
+                                        <a href="#" class="text-cyan-400 ml-1" onclick="toggleDescripcion({{ tarea.id }}); return false;">Ver más</a>
+                                    {% endif %}
+                                </span>
+                                {% if cant_palabras > 10 %}
+                                <span id="desc-full-{{ tarea.id }}" class="hidden">
+                                    {{ tarea.descripcion }}
+                                    <a href="#" class="text-cyan-400 ml-1" onclick="toggleDescripcion({{ tarea.id }}); return false;">Ver menos</a>
+                                </span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
                         <td class="px-4 py-3">
                             <select onchange="actualizarEstado(this)" data-task-id="{{ tarea.id }}" class="bg-slate-700 border border-slate-600 rounded-md p-1 text-xs focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                                 {% for value, label in estados_posibles %}
@@ -155,6 +170,16 @@
             statusBox.className = 'mb-4 text-center font-medium text-red-400';
         } finally {
             setTimeout(() => { statusBox.textContent = ''; }, 3000);
+        }
+    }
+
+    // Alternar la descripción completa o resumida
+    function toggleDescripcion(id) {
+        const shortEl = document.getElementById(`desc-short-${id}`);
+        const fullEl = document.getElementById(`desc-full-${id}`);
+        if (shortEl && fullEl) {
+            shortEl.classList.toggle('hidden');
+            fullEl.classList.toggle('hidden');
         }
     }
 </script>
