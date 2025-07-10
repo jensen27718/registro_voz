@@ -83,8 +83,14 @@ class Tarea(models.Model):
     )
     
     descripcion = models.TextField(
-        blank=True, 
+        blank=True,
         help_text="Descripción detallada de la tarea."
+    )
+
+    orden = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Número que define el orden de prioridad de la tarea."
     )
     
     fecha_completado = models.DateField(
@@ -117,5 +123,5 @@ class Tarea(models.Model):
         return f"Tarea #{self.id} para {self.cliente} ({self.tipo})"
 
     class Meta:
-        # Ordena las tareas por fecha de recibido (más nuevas primero) y luego por prioridad.
-        ordering = ['-fecha_recibido', 'prioridad']
+        # Ordena las tareas por el campo 'orden' y luego por fecha de recibido y prioridad.
+        ordering = ['orden', '-fecha_recibido', 'prioridad']

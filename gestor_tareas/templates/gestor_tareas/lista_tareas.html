@@ -23,6 +23,7 @@
             <table class="w-full text-sm text-left table-auto">
                 <thead class="text-xs text-slate-400 uppercase">
                     <tr>
+                        <th class="px-4 py-3">Orden</th>
                         <th class="px-4 py-3">Cliente / Teléfono</th>
                         <th class="px-4 py-3">Tipo</th>
                         <th class="px-4 py-3">Descripción</th>
@@ -35,7 +36,9 @@
                 <tbody class="divide-y divide-slate-700">
                     {% for tarea in tareas %}
                     <tr id="tarea-row-{{ tarea.id }}" class="hover:bg-slate-700/50 transition-colors duration-200 {% if tarea.estado == 'Completado' %}completed-row{% endif %}">
-                        
+
+                        <td class="px-4 py-3 text-xl font-bold text-white">{{ tarea.orden|default:0 }}</td>
+
                         <td class="px-4 py-3 font-medium text-white">
                             {{ tarea.cliente }}
                             {% if tarea.telefono %}
@@ -68,7 +71,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-10 text-slate-500">No hay tareas visibles. ¡Agrega la primera!</td>
+                        <td colspan="8" class="text-center py-10 text-slate-500">No hay tareas visibles. ¡Agrega la primera!</td>
                     </tr>
                     {% endfor %}
                 </tbody>

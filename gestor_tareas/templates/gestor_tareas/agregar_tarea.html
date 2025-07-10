@@ -150,6 +150,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><label for="input-cliente" class="block mb-1 text-slate-400 font-medium">Cliente</label><input type="text" id="input-cliente" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
                 <div><label for="input-telefono" class="block mb-1 text-slate-400 font-medium">Teléfono (Opcional)</label><input type="tel" id="input-telefono" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"/></div>
+                <div><label for="input-orden" class="block mb-1 text-slate-400 font-medium">Orden</label><input type="number" id="input-orden" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3"/></div>
                 <div class="sm:col-span-2"><label for="select-tipo" class="block mb-1 text-slate-400 font-medium">Tipo de Trabajo</label><div class="flex items-center gap-2"><select id="select-tipo" class="flex-grow" placeholder="Busca o selecciona..."></select><button type="button" id="btn-crear-tipo" class="bg-cyan-600 hover:bg-cyan-700 flex items-center justify-center w-10 h-10 rounded-md text-xl font-bold">+</button></div></div>
                 <div><label for="select-prioridad" class="block mb-1 text-slate-400 font-medium">Prioridad</label><select id="select-prioridad" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3"></select></div>
                 <div><label for="select-estado" class="block mb-1 text-slate-400 font-medium">Estado</label><select id="select-estado" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3"></select></div>
@@ -217,15 +218,16 @@
 
     async function registrarDatos() {
         statusBox.textContent = 'Guardando en la base de datos...';
-        const datos = {
-            fecha_recibido: document.getElementById('input-fecha_recibido').value,
-            cliente: document.getElementById('input-cliente').value,
-            telefono: document.getElementById('input-telefono').value,
-            descripcion: document.getElementById('input-descripcion').value,
-            prioridad: document.getElementById('select-prioridad').value,
-            estado: document.getElementById('select-estado').value,
-            tipo: tomSelectTipo.getValue()
-        };
+            const datos = {
+                fecha_recibido: document.getElementById('input-fecha_recibido').value,
+                cliente: document.getElementById('input-cliente').value,
+                telefono: document.getElementById('input-telefono').value,
+                descripcion: document.getElementById('input-descripcion').value,
+                prioridad: document.getElementById('select-prioridad').value,
+                estado: document.getElementById('select-estado').value,
+                tipo: tomSelectTipo.getValue(),
+                orden: document.getElementById('input-orden').value
+            };
         try {
             const response = await fetch(REGISTRAR_TAREA_URL, {
                 method: 'POST',

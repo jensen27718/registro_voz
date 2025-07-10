@@ -64,6 +64,7 @@ def editar_tarea(request, tarea_id):
         tarea.prioridad = request.POST.get('prioridad', Tarea.Prioridad.NORMAL)
         tarea.estado = request.POST.get('estado', Tarea.Estado.RECIBIDO)
         tarea.descripcion = request.POST.get('descripcion', '')
+        tarea.orden = request.POST.get('orden') or None
         
         # Maneja la relación con TipoTrabajo
         tipo_nombre = request.POST.get('tipo')
@@ -170,7 +171,8 @@ def registrar_tarea(request):
             cliente=data.get('cliente', 'N/A'),
             tipo=tipo_obj,
             telefono=data.get('telefono', ''),
-            descripcion=data.get('descripcion', '')
+            descripcion=data.get('descripcion', ''),
+            orden=data.get('orden')
         )
         return JsonResponse({'status': 'success', 'message': '¡Tarea registrada con éxito!'})
 
