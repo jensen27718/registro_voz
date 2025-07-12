@@ -385,55 +385,47 @@
       <h2 class="text-2xl font-bold text-gray-800">Valores de Atributo</h2>
       <div class="md:flex gap-4">
 
-
-        <div class="md:w-3/4 space-y-4">
-          {% regroup valores by atributo_def.tipo_producto as valores_por_tipo %}
-          {% for tipo in valores_por_tipo %}
-          <div class="border rounded">
-            <div class="bg-gray-50 flex justify-between items-center px-4 py-2">
-              <h3 class="font-semibold">{{ tipo.grouper.nombre }}</h3>
-              <button class="accordion-toggle text-sm text-blue-600" data-target="val-tipo-{{ forloop.counter }}">Ver</button>
-            </div>
-            <div id="val-tipo-{{ forloop.counter }}" class="hidden space-y-2">
-              {% regroup tipo.list by atributo_def as valores_por_atr %}
-              {% for grupo in valores_por_atr %}
-              <div class="border-t">
-                <div class="bg-gray-100 flex justify-between items-center px-4 py-2">
-                  <h4 class="font-semibold">{{ grupo.grouper.nombre }}</h4>
-                  <button class="accordion-toggle text-xs text-blue-600" data-target="val-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">Ver</button>
-                </div>
-                <div id="val-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="hidden overflow-x-auto">
-                  <table class="min-w-full text-sm text-left text-gray-700">
-                    <thead class="bg-gray-50 text-xs uppercase">
-                      <tr><th class="px-6 py-3">Valor</th><th class="px-6 py-3">Acciones</th></tr>
-                    </thead>
-                    <tbody>
-                      {% for v in grupo.list %}
-                      <tr class="border-b hover:bg-gray-50 text-sm">
-                        <td class="px-6 py-4">{{ v.valor }}</td>
-                        <td class="px-6 py-4">
-                          <a href="?section=valor&edit_val={{ v.id }}" onclick="return confirm('Editar este valor afectará variaciones que lo usan. ¿Continuar?');" class="bg-blue-500 text-white px-2 py-1 rounded">Editar</a>
-                          <form method="post" class="inline" onsubmit="return confirm('Eliminar este valor podría afectar variaciones. ¿Continuar?');">
-                            {% csrf_token %}
-                            <input type="hidden" name="delete_val" value="{{ v.id }}">
-                            <button class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
-                          </form>
-                        </td>
-                      </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        <div class="md:w-3/4 overflow-x-auto">
+          <table class="min-w-full text-sm text-left text-gray-700">
+            <thead class="bg-gray-100 text-xs uppercase">
+              <tr>
+                <th class="px-6 py-3">Tipo de Producto</th>
+                <th class="px-6 py-3">Atributo</th>
+                <th class="px-6 py-3">Valores</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% regroup atributos by tipo_producto as atr_por_tipo %}
+              {% for grupo in atr_por_tipo %}
+                {% for atr in grupo.list %}
+                <tr class="border-b hover:bg-gray-50">
+                  {% if forloop.first %}
+                  <td class="px-6 py-4 font-semibold" rowspan="{{ grupo.list|length }}">{{ grupo.grouper.nombre }}</td>
+                  {% endif %}
+                  <td class="px-6 py-4">{{ atr.nombre }}</td>
+                  <td class="px-6 py-4 space-y-1">
+                    {% for v in atr.valores.all %}
+                      <div class="flex items-center gap-2">
+                        <span>{{ v.valor }}</span>
+                        <a href="?section=valor&edit_val={{ v.id }}" class="text-blue-600 text-xs" onclick="return confirm('Editar este valor afectará variaciones que lo usan. ¿Continuar?');">Editar</a>
+                        <form method="post" class="inline" onsubmit="return confirm('Eliminar este valor podría afectar variaciones. ¿Continuar?');">
+                          {% csrf_token %}
+                          <input type="hidden" name="delete_val" value="{{ v.id }}">
+                          <button class="text-red-600 text-xs">Eliminar</button>
+                        </form>
+                      </div>
+                    {% empty %}-{% endfor %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% empty %}
+                <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No hay valores registrados.</td></tr>
               {% endfor %}
-            </div>
-          </div>
-          {% endfor %}
-
+            </tbody>
+          </table>
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
-
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_val %}Editar Valor{% else %}Nuevo Valor{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -444,7 +436,6 @@
             </form>
           </div>
         </div>
-
 
       </div>
     {% elif section == 'cliente' %}
