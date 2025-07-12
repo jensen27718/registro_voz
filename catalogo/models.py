@@ -105,6 +105,26 @@ class Promo(models.Model):
         return self.codigo
 
 
+class VariacionBase(models.Model):
+    tipo_producto = models.ForeignKey(
+        TipoProducto,
+        on_delete=models.CASCADE,
+        related_name="variaciones_base",
+    )
+    precio_base = models.DecimalField(max_digits=10, decimal_places=2)
+    valores = models.ManyToManyField(
+        ValorAtributo,
+        related_name="variaciones_base",
+    )
+
+    class Meta:
+        ordering = ["tipo_producto__nombre"]
+
+    def __str__(self):
+        valores_str = ", ".join(v.valor for v in self.valores.all())
+        return f"{self.tipo_producto.nombre} ({valores_str})"
+
+
 class VariacionProducto(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="variaciones")
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
