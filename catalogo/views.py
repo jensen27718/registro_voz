@@ -535,7 +535,12 @@ def valores_por_tipo(request):
 
 @require_http_methods(["POST"])
 def aplicar_variaciones_base(request, producto_id):
-    next_url = request.POST.get('next', reverse('catalogo:admin_dashboard'))
+    next_param = request.POST.get('next')
+    if next_param:
+        base_url = reverse('catalogo:admin_dashboard')
+        next_url = base_url + next_param if next_param.startswith('?') else next_param
+    else:
+        next_url = reverse('catalogo:admin_dashboard')
     try:
         producto = Producto.objects.select_related('categoria__tipo_producto').get(id=producto_id)
     except Producto.DoesNotExist:

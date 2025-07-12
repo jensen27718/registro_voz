@@ -50,7 +50,7 @@
             <div class="text-gray-500">{{ p.cliente.telefono }}</div>
           </td>
           <td class="px-6 py-4 font-bold text-gray-800">
-            ${{ p.total|floatformat:0 }}
+            {{ p.total|moneda }}
           </td>
           <td class="px-6 py-4">
             <!-- PASO 2: Aplicar el filtro de color -->
@@ -104,8 +104,8 @@
                           </div>
                       </td>
                       <td class="py-3 px-2 text-center">{{ item.cantidad }}</td>
-                      <td class="py-3 px-2 text-right">${{ item.precio_unitario|floatformat:0 }}</td>
-                      <td class="py-3 px-2 text-right font-bold text-gray-900">${{ item.subtotal|floatformat:0 }}</td>
+                      <td class="py-3 px-2 text-right">{{ item.precio_unitario|moneda }}</td>
+                      <td class="py-3 px-2 text-right font-bold text-gray-900">{{ item.subtotal|moneda }}</td>
                   </tr>
                   {% endfor %}
                   </tbody>
@@ -314,7 +314,7 @@
                       <tbody>
                         {% for v in p.variaciones.all %}
                         <tr class="border-b">
-                          <td class="px-4 py-2">${{ v.precio_base|floatformat:0 }}</td>
+                            <td class="px-4 py-2">{{ v.precio_base|moneda }}</td>
                           <td class="px-4 py-2">{% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                           <td class="px-4 py-2 space-x-2">
                             <a href="?section=variacion&edit_var={{ v.id }}&var_prod={{ p.id }}" class="text-blue-600 text-xs">Editar</a>
@@ -418,7 +418,7 @@
                 <tbody>
                   {% for b in g.list %}
                   <tr class="border-b">
-                    <td class="px-6 py-4">${{ b.precio_base|floatformat:0 }}</td>
+                      <td class="px-6 py-4">{{ b.precio_base|moneda }}</td>
                     <td class="px-6 py-4">{% for v in b.valores.all %}{{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                     <td class="px-6 py-4 space-x-2">
                       <a href="?section=base&edit_base={{ b.id }}" class="text-blue-600 text-xs">Editar</a>

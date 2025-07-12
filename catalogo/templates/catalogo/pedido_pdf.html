@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Pedido #{{ pedido.id }}</title>
+    {% load catalogo_tags %}
     <style>
         @page {
             size: a4 portrait;
@@ -106,9 +107,9 @@
                     </div>
                 </td>
                 <td class="text-right">{{ item.cantidad }}</td>
-                <td class="text-right">${{ item.precio_unitario|floatformat:0 }}</td>
+                <td class="text-right">{{ item.precio_unitario|moneda }}</td>
                 <!-- LÍNEA CORREGIDA -->
-                <td class="text-right font-bold">${{ item.subtotal|floatformat:0 }}</td>
+                <td class="text-right font-bold">{{ item.subtotal|moneda }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -118,7 +119,7 @@
         <table>
             <tr>
                 <td><strong>TOTAL A PAGAR:</strong></td>
-                <td class="text-right font-bold" style="font-size: 14pt;">${{ pedido.total|floatformat:0 }}</td>
+                  <td class="text-right font-bold" style="font-size: 14pt;">{{ pedido.total|moneda }}</td>
             </tr>
         </table>
     </div>

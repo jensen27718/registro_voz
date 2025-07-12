@@ -16,4 +16,16 @@ def estado_pedido_color(estado_str):
         'CANCELADO': 'bg-red-100 text-red-800',
     }
     # Devuelve la clase correspondiente o una por defecto si el estado no se encuentra.
+
     return colores.get(estado_str, 'bg-gray-100 text-gray-800')
+
+
+@register.filter(name='moneda')
+def moneda(value):
+    """Formatea valores numéricos como moneda colombiana."""
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return value
+    return "$%s" % ("{:,.0f}".format(value).replace(",", "."))
+
