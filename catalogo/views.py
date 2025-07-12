@@ -503,6 +503,36 @@ def valores_por_producto(request):
 
 
 @staff_member_required
+
+@require_http_methods(["GET"])
+def valores_por_tipo(request):
+    """Devuelve los valores de atributo asociados a un tipo de producto."""
+    tipo_id = request.GET.get('tipo_id')
+    if not tipo_id:
+        return JsonResponse({'error': 'tipo_id requerido'}, status=400)
+
+    try:
+        tipo = TipoProducto.objects.get(id=tipo_id)
+    except TipoProducto.DoesNotExist:
+        return JsonResponse({'error': 'Tipo no encontrado'}, status=404)
+
+    valores = ValorAtributo.objects.filter(
+        atributo_def__tipo_producto=tipo
+    ).values('id', 'valor', 'atributo_def__nombre')
+
+    data = [
+        {
+            'id': v['id'],
+            'valor': v['valor'],
+            'grupo': v['atributo_def__nombre'],
+        }
+        for v in valores
+    ]
+    return JsonResponse({'valores': data})
+
+
+@staff_member_required
+
 @require_http_methods(["POST"])
 def aplicar_variaciones_base(request, producto_id):
     next_url = request.POST.get('next', reverse('catalogo:admin_dashboard'))

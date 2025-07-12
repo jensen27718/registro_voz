@@ -20,5 +20,8 @@ urlpatterns = [
     # --- NUEVA RUTA PARA EL PDF ---
     path('admin/pedido/<int:pedido_id>/pdf/', views.generar_pedido_pdf, name='generar_pedido_pdf'),
     path('admin/valores-producto/', views.valores_por_producto, name='valores_por_producto'),
+
+    path('admin/valores-tipo/', views.valores_por_tipo, name='valores_por_tipo'),
+
     path('admin/producto/<int:producto_id>/aplicar-base/', views.aplicar_variaciones_base, name='aplicar_variaciones_base'),
 ]
