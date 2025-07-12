@@ -353,6 +353,7 @@ def admin_dashboard(request):
     tipos = TipoProducto.objects.all().order_by('nombre')
     categorias = Categoria.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
     productos = Producto.objects.select_related('categoria__tipo_producto').order_by('categoria__nombre', 'nombre')
+
     productos_con_vars_qs = productos.filter(variaciones__isnull=False).distinct().prefetch_related(
         Prefetch(
             'variaciones',
@@ -371,6 +372,7 @@ def admin_dashboard(request):
     if var_prod:
         producto_sel = productos.filter(id=var_prod).first()
     else:
+
         producto_sel = None
 
     atributos = AtributoDef.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
@@ -392,6 +394,7 @@ def admin_dashboard(request):
         'productos_con_vars': productos_con_vars,
         'productos_sin_vars': productos_sin_vars,
         'producto_sel': producto_sel,
+
 
         'atributos': atributos,
         'valores': valores,
