@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load catalogo_tags %}
 
 {% block title %}Dashboard Contable{% endblock %}
 
@@ -11,21 +12,21 @@
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
     <div class="bg-slate-800 rounded-lg p-4">
       <h2 class="text-center font-semibold text-slate-400 mb-2">Semana</h2>
-      <p>Ingresos: ${{ totales_semana.ingresos }}</p>
-      <p>Egresos: ${{ totales_semana.egresos }}</p>
-      <p class="font-bold">Saldo: ${{ totales_semana.saldo }}</p>
+        <p>Ingresos: {{ totales_semana.ingresos|moneda }}</p>
+        <p>Egresos: {{ totales_semana.egresos|moneda }}</p>
+        <p class="font-bold">Saldo: {{ totales_semana.saldo|moneda }}</p>
     </div>
     <div class="bg-slate-800 rounded-lg p-4">
       <h2 class="text-center font-semibold text-slate-400 mb-2">Mes</h2>
-      <p>Ingresos: ${{ totales_mes.ingresos }}</p>
-      <p>Egresos: ${{ totales_mes.egresos }}</p>
-      <p class="font-bold">Saldo: ${{ totales_mes.saldo }}</p>
+        <p>Ingresos: {{ totales_mes.ingresos|moneda }}</p>
+        <p>Egresos: {{ totales_mes.egresos|moneda }}</p>
+        <p class="font-bold">Saldo: {{ totales_mes.saldo|moneda }}</p>
     </div>
     <div class="bg-slate-800 rounded-lg p-4">
       <h2 class="text-center font-semibold text-slate-400 mb-2">Año</h2>
-      <p>Ingresos: ${{ totales_anio.ingresos }}</p>
-      <p>Egresos: ${{ totales_anio.egresos }}</p>
-      <p class="font-bold">Saldo: ${{ totales_anio.saldo }}</p>
+        <p>Ingresos: {{ totales_anio.ingresos|moneda }}</p>
+        <p>Egresos: {{ totales_anio.egresos|moneda }}</p>
+        <p class="font-bold">Saldo: {{ totales_anio.saldo|moneda }}</p>
     </div>
   </div>
 
@@ -34,22 +35,22 @@
     {% for c in cuentas_data %}
     <div class="bg-slate-800 rounded-lg p-4 space-y-2">
       <h3 class="text-center font-bold text-cyan-400">{{ c.cuenta.nombre }}</h3>
-      <p class="text-center font-semibold">Saldo actual: ${{ c.saldo_actual }}</p>
+        <p class="text-center font-semibold">Saldo actual: {{ c.saldo_actual|moneda }}</p>
       <div class="grid grid-cols-3 gap-2 text-sm">
         <div>
           <h4 class="text-center text-slate-400 font-semibold mb-1">Semana</h4>
-          <p>Ing: ${{ c.totales_semana.ingresos }}</p>
-          <p>Egr: ${{ c.totales_semana.egresos }}</p>
+            <p>Ing: {{ c.totales_semana.ingresos|moneda }}</p>
+            <p>Egr: {{ c.totales_semana.egresos|moneda }}</p>
         </div>
         <div>
           <h4 class="text-center text-slate-400 font-semibold mb-1">Mes</h4>
-          <p>Ing: ${{ c.totales_mes.ingresos }}</p>
-          <p>Egr: ${{ c.totales_mes.egresos }}</p>
+            <p>Ing: {{ c.totales_mes.ingresos|moneda }}</p>
+            <p>Egr: {{ c.totales_mes.egresos|moneda }}</p>
         </div>
         <div>
           <h4 class="text-center text-slate-400 font-semibold mb-1">Año</h4>
-          <p>Ing: ${{ c.totales_anio.ingresos }}</p>
-          <p>Egr: ${{ c.totales_anio.egresos }}</p>
+            <p>Ing: {{ c.totales_anio.ingresos|moneda }}</p>
+            <p>Egr: {{ c.totales_anio.egresos|moneda }}</p>
         </div>
       </div>
     </div>
@@ -75,8 +76,8 @@
         <tr>
           <td class="px-4 py-2">{{ r.fecha|date:'Y-m-d' }}</td>
           <td class="px-4 py-2">{{ r.descripcion }}</td>
-          <td class="px-4 py-2">{{ r.ingresos }}</td>
-          <td class="px-4 py-2">{{ r.egresos }}</td>
+            <td class="px-4 py-2">{{ r.ingresos|moneda }}</td>
+            <td class="px-4 py-2">{{ r.egresos|moneda }}</td>
           <td class="px-4 py-2">{{ r.cliente.nombre|default:'--' }}</td>
           <td class="px-4 py-2 whitespace-nowrap">
             <a href="{% url 'interfaz:editar_registro' r.id %}" class="text-yellow-400 mr-2">Editar</a>

@@ -60,9 +60,14 @@ a:hover, .link:hover {
   background: var(--brand-gradient) !important;
   color: #fff !important;
 }
-.color-swatch.selected {
-  border-color: var(--brand-purple) !important;
-  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--brand-purple);
+.color-option {
+  border-color: var(--option-color, var(--brand-purple));
+  color: var(--option-color, var(--brand-purple));
+}
+
+.color-option.selected {
+  background: var(--option-color, var(--brand-purple));
+  color: #fff !important;
 }
 #cart-count {
   background: var(--brand-gradient);
