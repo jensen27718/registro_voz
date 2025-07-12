@@ -49,6 +49,12 @@ class AtributoDefForm(BaseStyledForm):
 
 class ValorAtributoForm(BaseStyledForm):
 
+    def __init__(self, *args, **kwargs):
+        """Show product type in attribute choices."""
+        super().__init__(*args, **kwargs)
+        field = self.fields["atributo_def"]
+        field.label_from_instance = lambda obj: f"{obj.tipo_producto.nombre} - {obj.nombre}"
+
     class Meta:
         model = ValorAtributo
         fields = ['atributo_def', 'valor', 'display']
@@ -72,6 +78,8 @@ class VariacionProductoForm(BaseStyledForm):
             producto_id = self.data.get(field_name)
         elif self.instance.pk:
             producto_id = self.instance.producto_id
+        elif self.initial.get('producto'):
+            producto_id = self.initial.get('producto')
 
         if producto_id:
             try:
