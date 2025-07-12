@@ -78,6 +78,8 @@ class VariacionProductoForm(BaseStyledForm):
             producto_id = self.data.get(field_name)
         elif self.instance.pk:
             producto_id = self.instance.producto_id
+        elif self.initial.get('producto'):
+            producto_id = self.initial.get('producto')
 
         if producto_id:
             try:
