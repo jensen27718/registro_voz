@@ -503,6 +503,7 @@ def valores_por_producto(request):
 
 
 @staff_member_required
+
 @require_http_methods(["GET"])
 def valores_por_tipo(request):
     """Devuelve los valores de atributo asociados a un tipo de producto."""
@@ -531,6 +532,7 @@ def valores_por_tipo(request):
 
 
 @staff_member_required
+
 @require_http_methods(["POST"])
 def aplicar_variaciones_base(request, producto_id):
     next_url = request.POST.get('next', reverse('catalogo:admin_dashboard'))
