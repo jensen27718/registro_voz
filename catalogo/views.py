@@ -22,12 +22,13 @@ from .forms import (
     CategoriaForm,
     ProductoForm,
     VariacionProductoForm,
+    VariacionBaseForm,
     AtributoDefForm,
     ValorAtributoForm,
 )
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
-    AtributoDef, ValorAtributo, VariacionProducto, Promo,
+    AtributoDef, ValorAtributo, VariacionProducto, VariacionBase, Promo,
     Carrito, CarritoItem,
     Pedido, PedidoItem, EstadoPedido
 )
@@ -266,6 +267,7 @@ def admin_dashboard(request):
     edit_var = request.GET.get('edit_var')
     edit_atr = request.GET.get('edit_atr')
     edit_val = request.GET.get('edit_val')
+    edit_base = request.GET.get('edit_base')
     var_prod = request.GET.get('var_prod')
 
     tipo_form = TipoProductoForm(prefix='tipo', instance=TipoProducto.objects.get(id=edit_tipo) if edit_tipo else None)
@@ -278,6 +280,7 @@ def admin_dashboard(request):
     else:
         initial = {'producto': var_prod} if var_prod else None
         variacion_form = VariacionProductoForm(prefix='var', initial=initial)
+    base_form = VariacionBaseForm(prefix='base', instance=VariacionBase.objects.get(id=edit_base) if edit_base else None)
     atributo_form = AtributoDefForm(prefix='atr', instance=AtributoDef.objects.get(id=edit_atr) if edit_atr else None)
     valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
 
@@ -301,6 +304,9 @@ def admin_dashboard(request):
         if 'delete_val' in request.POST:
             ValorAtributo.objects.filter(id=request.POST['delete_val']).delete()
             return redirect(f"{reverse('catalogo:admin_dashboard')}?section=valor")
+        if 'delete_base' in request.POST:
+            VariacionBase.objects.filter(id=request.POST['delete_base']).delete()
+            return redirect(f"{reverse('catalogo:admin_dashboard')}?section=base")
 
         # creaciones/ediciones
         if 'tipo-nombre' in request.POST:
@@ -339,6 +345,12 @@ def admin_dashboard(request):
             if valor_form.is_valid():
                 valor_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=valor")
+        if 'base-precio_base' in request.POST:
+            instance = VariacionBase.objects.get(id=edit_base) if edit_base else None
+            base_form = VariacionBaseForm(request.POST, prefix='base', instance=instance)
+            if base_form.is_valid():
+                base_form.save()
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=base")
 
     pedidos = (
         Pedido.objects.select_related('cliente')
@@ -369,6 +381,12 @@ def admin_dashboard(request):
     productos_con_vars = paginator_con.get_page(page_con)
     productos_sin_vars = paginator_sin.get_page(page_sin)
 
+    variaciones_base = (
+        VariacionBase.objects.select_related('tipo_producto')
+        .prefetch_related('valores__atributo_def')
+        .order_by('tipo_producto__nombre')
+    )
+
     if var_prod:
         producto_sel = productos.filter(id=var_prod).first()
     else:
@@ -387,6 +405,7 @@ def admin_dashboard(request):
         'variacion_form': variacion_form,
         'atributo_form': atributo_form,
         'valor_form': valor_form,
+        'base_form': base_form,
         'clientes': clientes,
         'tipos': tipos,
         'categorias': categorias,
@@ -394,6 +413,7 @@ def admin_dashboard(request):
         'productos_con_vars': productos_con_vars,
         'productos_sin_vars': productos_sin_vars,
         'producto_sel': producto_sel,
+        'variaciones_base': variaciones_base,
 
 
         'atributos': atributos,
@@ -480,6 +500,35 @@ def valores_por_producto(request):
         for v in valores
     ]
     return JsonResponse({'valores': data})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def aplicar_variaciones_base(request, producto_id):
+    next_url = request.POST.get('next', reverse('catalogo:admin_dashboard'))
+    try:
+        producto = Producto.objects.select_related('categoria__tipo_producto').get(id=producto_id)
+    except Producto.DoesNotExist:
+        return HttpResponseNotFound('Producto no encontrado')
+
+    bases = VariacionBase.objects.filter(
+        tipo_producto=producto.categoria.tipo_producto
+    ).prefetch_related('valores')
+
+    for base in bases:
+        exists = False
+        for var in producto.variaciones.all():
+            if var.precio_base == base.precio_base and set(var.valores.values_list('id', flat=True)) == set(base.valores.values_list('id', flat=True)):
+                exists = True
+                break
+        if not exists:
+            variacion = VariacionProducto.objects.create(
+                producto=producto,
+                precio_base=base.precio_base,
+            )
+            variacion.valores.set(base.valores.all())
+
+    return redirect(next_url)
 
 
 @csrf_exempt

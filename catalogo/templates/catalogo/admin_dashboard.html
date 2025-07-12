@@ -17,6 +17,7 @@
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=atributo" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'atributo' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Atributos</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=valor" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'valor' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Valores</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=variacion" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'variacion' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Variaciones</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=base" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'base' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Bases</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=tipo" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'tipo' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Tipos</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'categoria' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Categorías</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'cliente' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Clientes</a></li>
@@ -296,6 +297,11 @@
 
                   <td class="px-6 py-4 space-x-2">
                     <a href="?section=variacion&var_prod={{ p.id }}" class="text-blue-600 text-sm">Agregar</a>
+                    <form method="post" action="{% url 'catalogo:aplicar_variaciones_base' p.id %}" class="inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="?section=variacion&var_prod={{ p.id }}#tabla-con">
+                      <button class="text-green-600 text-sm">Copiar base</button>
+                    </form>
                     <button type="button" class="var-toggle text-blue-600 text-sm" data-target="vars-{{ p.id }}">Ver</button>
                   </td>
                 </tr>
@@ -355,7 +361,14 @@
                 <tr class="border-b hover:bg-gray-50" data-name="{{ p.nombre }} {{ p.referencia }}">
                   <td class="px-6 py-4"><img src="{{ p.foto_url }}" alt="{{ p.referencia }}" class="h-8 w-8 object-cover"></td>
                   <td class="px-6 py-4 font-semibold">{{ p.referencia }}</td>
-                  <td class="px-6 py-4"><a href="?section=variacion&var_prod={{ p.id }}" class="text-blue-600 text-sm">Agregar</a></td>
+                  <td class="px-6 py-4 space-x-2">
+                    <a href="?section=variacion&var_prod={{ p.id }}" class="text-blue-600 text-sm">Agregar</a>
+                    <form method="post" action="{% url 'catalogo:aplicar_variaciones_base' p.id %}" class="inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="?section=variacion&var_prod={{ p.id }}#tabla-sin">
+                      <button class="text-green-600 text-sm">Copiar base</button>
+                    </form>
+                  </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No hay productos.</td></tr>
@@ -382,6 +395,57 @@
               {{ variacion_form.as_p }}
               <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
               {% if edit_var %}<a href="?section=variacion&var_prod={{ var_prod }}" class="ml-2 text-sm">Cancelar</a>{% endif %}
+            </form>
+      </div>
+        </div>
+      </div>
+{% elif section == 'base' %}
+      <h2 class="text-2xl font-bold text-gray-800">Variaciones Base</h2>
+      <div class="md:flex gap-4">
+        <div class="md:w-3/4 space-y-4">
+          {% regroup variaciones_base by tipo_producto as base_por_tipo %}
+          {% for g in base_por_tipo %}
+          <div class="border rounded">
+            <div class="bg-gray-50 flex justify-between items-center px-4 py-2">
+              <h3 class="font-semibold">{{ g.grouper.nombre }}</h3>
+              <button class="accordion-toggle text-sm text-blue-600" data-target="base-{{ forloop.counter }}">Ver</button>
+            </div>
+            <div id="base-{{ forloop.counter }}" class="hidden overflow-x-auto">
+              <table class="min-w-full text-sm text-left text-gray-700">
+                <thead class="bg-gray-100 text-xs uppercase">
+                  <tr><th class="px-6 py-3">Precio</th><th class="px-6 py-3">Valores</th><th class="px-6 py-3">Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {% for b in g.list %}
+                  <tr class="border-b">
+                    <td class="px-6 py-4">${{ b.precio_base|floatformat:0 }}</td>
+                    <td class="px-6 py-4">{% for v in b.valores.all %}{{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    <td class="px-6 py-4 space-x-2">
+                      <a href="?section=base&edit_base={{ b.id }}" class="text-blue-600 text-xs">Editar</a>
+                      <form method="post" class="inline" onsubmit="return confirm('Eliminar esta variación base?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_base" value="{{ b.id }}">
+                        <button class="text-red-600 text-xs">Eliminar</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">Sin variaciones</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="md:w-1/4 mt-4 md:mt-0">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold text-gray-800">{% if edit_base %}Editar Base{% else %}Nueva Variación Base{% endif %}</h2>
+            <form method="post" class="space-y-4 mt-4">
+              {% csrf_token %}
+              {{ base_form.as_p }}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Guardar</button>
+              {% if edit_base %}<a href="?section=base" class="ml-2 text-sm">Cancelar</a>{% endif %}
             </form>
           </div>
         </div>
