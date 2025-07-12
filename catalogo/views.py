@@ -264,11 +264,18 @@ def admin_dashboard(request):
     edit_var = request.GET.get('edit_var')
     edit_atr = request.GET.get('edit_atr')
     edit_val = request.GET.get('edit_val')
+    var_prod = request.GET.get('var_prod')
 
     tipo_form = TipoProductoForm(prefix='tipo', instance=TipoProducto.objects.get(id=edit_tipo) if edit_tipo else None)
     categoria_form = CategoriaForm(prefix='cat', instance=Categoria.objects.get(id=edit_cat) if edit_cat else None)
     producto_form = ProductoForm(prefix='prod', instance=Producto.objects.get(id=edit_prod) if edit_prod else None)
-    variacion_form = VariacionProductoForm(prefix='var', instance=VariacionProducto.objects.get(id=edit_var) if edit_var else None)
+    if edit_var:
+        var_instance = VariacionProducto.objects.get(id=edit_var)
+        variacion_form = VariacionProductoForm(prefix='var', instance=var_instance)
+        var_prod = var_instance.producto_id
+    else:
+        initial = {'producto': var_prod} if var_prod else None
+        variacion_form = VariacionProductoForm(prefix='var', initial=initial)
     atributo_form = AtributoDefForm(prefix='atr', instance=AtributoDef.objects.get(id=edit_atr) if edit_atr else None)
     valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
 
@@ -344,11 +351,15 @@ def admin_dashboard(request):
     tipos = TipoProducto.objects.all().order_by('nombre')
     categorias = Categoria.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
     productos = Producto.objects.select_related('categoria__tipo_producto').order_by('categoria__nombre', 'nombre')
-    variaciones = (
-        VariacionProducto.objects.select_related('producto__categoria__tipo_producto')
-        .prefetch_related('valores__atributo_def')
-        .all()
-    )
+    productos_con_vars = productos.filter(variaciones__isnull=False).distinct()
+    productos_sin_vars = productos.filter(variaciones__isnull=True)
+    variaciones_qs = VariacionProducto.objects.select_related('producto__categoria__tipo_producto').prefetch_related('valores__atributo_def')
+    if var_prod:
+        variaciones = variaciones_qs.filter(producto_id=var_prod)
+        producto_sel = productos.filter(id=var_prod).first()
+    else:
+        variaciones = variaciones_qs.all()
+        producto_sel = None
 
     atributos = AtributoDef.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
     valores = ValorAtributo.objects.select_related('atributo_def__tipo_producto').order_by('atributo_def__nombre', 'valor')
@@ -366,6 +377,9 @@ def admin_dashboard(request):
         'tipos': tipos,
         'categorias': categorias,
         'productos': productos,
+        'productos_con_vars': productos_con_vars,
+        'productos_sin_vars': productos_sin_vars,
+        'producto_sel': producto_sel,
         'variaciones': variaciones,
 
         'atributos': atributos,
@@ -373,6 +387,7 @@ def admin_dashboard(request):
 
         'estados': EstadoPedido.choices,
         'section': section,
+        'var_prod': var_prod,
     })
 
 
