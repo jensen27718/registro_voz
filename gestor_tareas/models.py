@@ -100,9 +100,14 @@ class Tarea(models.Model):
     )
     
     is_visible = models.BooleanField(
-        default=True, 
+        default=True,
         help_text="Indica si la tarea es visible en la lista principal. Desmarcar para archivar."
     )
+
+    @property
+    def dias_desde_recibido(self) -> int:
+        """Cantidad de días transcurridos desde ``fecha_recibido``."""
+        return (timezone.now().date() - self.fecha_recibido).days
 
     def save(self, *args, **kwargs):
         """
