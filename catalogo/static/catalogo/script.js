@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .filter(val => val.atributoDefId === defId);
             let optionsHTML = valoresDisponibles.map(val => {
                 if (atributoDef.nombre.toLowerCase() === 'color') {
-                     return `<div class="color-swatch" data-atributo-def-id="${defId}" data-valor-id="${val.id}" style="background: ${val.display || '#ccc'};" title="${val.valor}"></div>`;
+                    return `<div class="color-option flex flex-col items-center" data-atributo-def-id="${defId}" data-valor-id="${val.id}"><div class="color-swatch" style="background: ${val.display || '#ccc'};"></div><span class="text-xs mt-1">${val.valor}</span></div>`;
                 }
                 return `<div class="variation-option" data-atributo-def-id="${defId}" data-valor-id="${val.id}">${val.valor}</div>`;
             }).join('');
@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalQuantityPlus.addEventListener('click', () => { state.modalSelection.quantity++; updateModalUI(); });
     modalQuantityMinus.addEventListener('click', () => { if (state.modalSelection.quantity > 1) { state.modalSelection.quantity--; updateModalUI(); } });
     modalProductAttributesContainer.addEventListener('click', (e) => {
-        const option = e.target.closest('.variation-option, .color-swatch');
+        const option = e.target.closest('.variation-option, .color-option, .color-swatch');
         if (option) {
             const defId = option.dataset.atributoDefId;
             const valId = Number(option.dataset.valorId);
