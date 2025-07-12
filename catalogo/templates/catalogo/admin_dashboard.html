@@ -611,6 +611,34 @@
                 cargarValores(productoSel.value);
             }
         }
+
+        const valoresBaseSel = document.querySelector('#id_base-valores');
+        const tipoSel = document.querySelector('#id_base-tipo_producto');
+        let tomBase;
+        if (valoresBaseSel) {
+            tomBase = new TomSelect(valoresBaseSel, { plugins: ['remove_button'], optgroupField: 'group' });
+        }
+        function cargarValoresBase(tipoId) {
+            if (!tomBase || !tipoId) { if(tomBase){ tomBase.clearOptions(); tomBase.clearOptionGroups(); } return; }
+            fetch('{% url "catalogo:valores_por_tipo" %}?tipo_id=' + tipoId)
+                .then(r => r.json())
+                .then(data => {
+                    tomBase.clearOptions();
+                    tomBase.clearOptionGroups();
+                    const added = new Set();
+                    data.valores.forEach(v => {
+                        if(!added.has(v.grupo)) { tomBase.addOptionGroup(v.grupo, {label: v.grupo}); added.add(v.grupo); }
+                        tomBase.addOption({value: v.id, text: v.valor, optgroup: v.grupo});
+                    });
+                    tomBase.refreshOptions(false);
+                });
+        }
+        if (tipoSel) {
+            tipoSel.addEventListener('change', e => cargarValoresBase(e.target.value));
+            if (tipoSel.value) {
+                cargarValoresBase(tipoSel.value);
+            }
+        }
         const searchInput = document.querySelector('#buscar-producto');
         if (searchInput) {
             searchInput.addEventListener('input', () => {
