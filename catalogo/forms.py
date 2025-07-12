@@ -49,6 +49,12 @@ class AtributoDefForm(BaseStyledForm):
 
 class ValorAtributoForm(BaseStyledForm):
 
+    def __init__(self, *args, **kwargs):
+        """Show product type in attribute choices."""
+        super().__init__(*args, **kwargs)
+        field = self.fields["atributo_def"]
+        field.label_from_instance = lambda obj: f"{obj.tipo_producto.nombre} - {obj.nombre}"
+
     class Meta:
         model = ValorAtributo
         fields = ['atributo_def', 'valor', 'display']
