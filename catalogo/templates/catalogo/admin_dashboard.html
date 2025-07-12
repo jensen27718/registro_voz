@@ -271,15 +271,16 @@
       </div>
 {% elif section == 'variacion' %}
       <h2 class="text-2xl font-bold text-gray-800">Variaciones</h2>
-      <div class="mb-4 md:w-1/2">
-        <input id="buscar-producto" type="text" placeholder="Buscar producto..." class="border rounded p-2 w-full">
+      <div class="mb-4 flex gap-2 md:w-3/4">
+        <input id="buscar-producto" type="text" placeholder="Buscar producto..." class="border rounded p-2 flex-grow">
+        <button type="button" class="tab-variacion bg-blue-500 text-white px-3 py-1 rounded" data-target="tabla-con">Con Variaciones</button>
+        <button type="button" class="tab-variacion border px-3 py-1 rounded" data-target="tabla-sin">Sin Variaciones</button>
       </div>
       <div class="md:flex gap-4">
 
         <div class="md:w-3/4 space-y-8">
-          <div class="overflow-x-auto">
-            <h3 class="font-semibold mb-2">Productos con Variaciones</h3>
-            <table id="con-var" class="min-w-full text-sm text-left text-gray-700">
+          <div id="tabla-con" class="overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-700">
               <thead class="bg-gray-100 text-xs uppercase">
                 <tr><th class="px-6 py-3">Foto</th><th class="px-6 py-3">Referencia</th><th class="px-6 py-3">Acciones</th></tr>
               </thead>
@@ -288,18 +289,56 @@
                 <tr class="border-b hover:bg-gray-50" data-name="{{ p.nombre }} {{ p.referencia }}">
                   <td class="px-6 py-4"><img src="{{ p.foto_url }}" alt="{{ p.referencia }}" class="h-8 w-8 object-cover"></td>
                   <td class="px-6 py-4 font-semibold">{{ p.referencia }}</td>
-                  <td class="px-6 py-4"><a href="?section=variacion&var_prod={{ p.id }}" class="text-blue-600 text-sm">Ver</a></td>
+                  <td class="px-6 py-4 space-x-2">
+                    <a href="?section=variacion&var_prod={{ p.id }}" class="text-blue-600 text-sm">Agregar</a>
+                    <button type="button" class="var-toggle text-blue-600 text-sm" data-target="vars-{{ p.id }}">Ver</button>
+                  </td>
+                </tr>
+                <tr id="vars-{{ p.id }}" class="hidden bg-gray-50">
+                  <td colspan="3" class="p-0">
+                    <table class="min-w-full text-xs">
+                      <thead class="bg-gray-100 uppercase">
+                        <tr><th class="px-4 py-2">Precio</th><th class="px-4 py-2">Valores</th><th class="px-4 py-2">Acciones</th></tr>
+                      </thead>
+                      <tbody>
+                        {% for v in p.variaciones.all %}
+                        <tr class="border-b">
+                          <td class="px-4 py-2">${{ v.precio_base|floatformat:0 }}</td>
+                          <td class="px-4 py-2">{% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                          <td class="px-4 py-2 space-x-2">
+                            <a href="?section=variacion&edit_var={{ v.id }}&var_prod={{ p.id }}" class="text-blue-600 text-xs">Editar</a>
+                            <form method="post" class="inline" onsubmit="return confirm('Eliminar esta variación podría afectar pedidos. ¿Continuar?');">
+                              {% csrf_token %}
+                              <input type="hidden" name="delete_var" value="{{ v.id }}">
+                              <button class="text-red-600 text-xs">Eliminar</button>
+                            </form>
+                          </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="px-4 py-2 text-center text-gray-500">Sin variaciones</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No hay productos.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
+            <div class="mt-2 text-sm flex justify-center gap-2">
+              {% if productos_con_vars.has_previous %}
+              <a href="?section=variacion&page_con={{ productos_con_vars.previous_page_number }}#tabla-con" class="px-2">&laquo;</a>
+              {% endif %}
+              <span>{{ productos_con_vars.number }} / {{ productos_con_vars.paginator.num_pages }}</span>
+              {% if productos_con_vars.has_next %}
+              <a href="?section=variacion&page_con={{ productos_con_vars.next_page_number }}#tabla-con" class="px-2">&raquo;</a>
+              {% endif %}
+            </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <h3 class="font-semibold mb-2">Productos sin Variaciones</h3>
-            <table id="sin-var" class="min-w-full text-sm text-left text-gray-700">
+          <div id="tabla-sin" class="hidden overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-700">
               <thead class="bg-gray-100 text-xs uppercase">
                 <tr><th class="px-6 py-3">Foto</th><th class="px-6 py-3">Referencia</th><th class="px-6 py-3">Acciones</th></tr>
               </thead>
@@ -315,41 +354,19 @@
                 {% endfor %}
               </tbody>
             </table>
+            <div class="mt-2 text-sm flex justify-center gap-2">
+              {% if productos_sin_vars.has_previous %}
+              <a href="?section=variacion&page_sin={{ productos_sin_vars.previous_page_number }}#tabla-sin" class="px-2">&laquo;</a>
+              {% endif %}
+              <span>{{ productos_sin_vars.number }} / {{ productos_sin_vars.paginator.num_pages }}</span>
+              {% if productos_sin_vars.has_next %}
+              <a href="?section=variacion&page_sin={{ productos_sin_vars.next_page_number }}#tabla-sin" class="px-2">&raquo;</a>
+              {% endif %}
+            </div>
           </div>
-
-          {% if var_prod and producto_sel %}
-          <div class="overflow-x-auto">
-            <h3 class="font-semibold mb-2">Variaciones de {{ producto_sel.referencia }}</h3>
-            <table class="min-w-full text-sm text-left text-gray-700">
-              <thead class="bg-gray-100 text-xs uppercase">
-                <tr><th class="px-6 py-3">Precio</th><th class="px-6 py-3">Valores</th><th class="px-6 py-3">Acciones</th></tr>
-              </thead>
-              <tbody>
-                {% for v in variaciones %}
-                <tr class="border-b hover:bg-gray-50">
-                  <td class="px-6 py-4">${{ v.precio_base|floatformat:0 }}</td>
-                  <td class="px-6 py-4">{% for val in v.valores.all %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-                  <td class="px-6 py-4">
-                    <a href="?section=variacion&edit_var={{ v.id }}&var_prod={{ producto_sel.id }}" onclick="return confirm('Editar esta variación puede afectar pedidos existentes. ¿Continuar?');" class="text-blue-600 text-sm">Editar</a>
-                    <form method="post" class="inline" onsubmit="return confirm('Eliminar esta variación podría afectar pedidos. ¿Continuar?');">
-                      {% csrf_token %}
-                      <input type="hidden" name="delete_var" value="{{ v.id }}">
-                      <button class="text-red-600 text-sm">Eliminar</button>
-                    </form>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No hay variaciones registradas.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% endif %}
-
         </div>
 
         <div class="md:w-1/4 mt-4 md:mt-0">
-
           <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold text-gray-800">{% if edit_var %}Editar Variación{% else %}Nueva Variación{% endif %}</h2>
             <form method="post" class="space-y-4 mt-4">
@@ -499,15 +516,20 @@
         const productoSel = document.querySelector('#id_var-producto');
         let tom;
         if (valoresSel) {
-            tom = new TomSelect(valoresSel, { plugins: ['remove_button'] });
+            tom = new TomSelect(valoresSel, { plugins: ['remove_button'], optgroupField: 'group' });
         }
         function cargarValores(prodId) {
-            if (!tom || !prodId) { if(tom) tom.clearOptions(); return; }
+            if (!tom || !prodId) { if(tom){ tom.clearOptions(); tom.clearOptionGroups(); } return; }
             fetch('{% url "catalogo:valores_por_producto" %}?producto_id=' + prodId)
                 .then(r => r.json())
                 .then(data => {
                     tom.clearOptions();
-                    data.valores.forEach(v => tom.addOption({value: v.id, text: v.label}));
+                    tom.clearOptionGroups();
+                    const added = new Set();
+                    data.valores.forEach(v => {
+                        if(!added.has(v.grupo)) { tom.addOptionGroup(v.grupo, {label: v.grupo}); added.add(v.grupo); }
+                        tom.addOption({value: v.id, text: v.valor, optgroup: v.grupo});
+                    });
                     tom.refreshOptions(false);
                 });
         }
@@ -521,12 +543,29 @@
         if (searchInput) {
             searchInput.addEventListener('input', () => {
                 const term = searchInput.value.toLowerCase();
-                document.querySelectorAll('#con-var tbody tr, #sin-var tbody tr').forEach(row => {
+                document.querySelectorAll('#tabla-con tbody tr, #tabla-sin tbody tr').forEach(row => {
                     const name = row.dataset.name.toLowerCase();
                     row.classList.toggle('hidden', !name.includes(term));
                 });
             });
         }
+        document.querySelectorAll('.tab-variacion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#tabla-con, #tabla-sin').forEach(t => t.classList.add('hidden'));
+                document.getElementById(btn.dataset.target).classList.remove('hidden');
+                document.querySelectorAll('.tab-variacion').forEach(b => b.classList.remove('bg-blue-500', 'text-white'));
+                btn.classList.add('bg-blue-500', 'text-white');
+            });
+        });
+        document.querySelectorAll('.var-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const row = document.getElementById(btn.dataset.target);
+                if (row) {
+                    const hide = row.classList.toggle('hidden');
+                    btn.textContent = hide ? 'Ver' : 'Ocultar';
+                }
+            });
+        });
         document.querySelectorAll('.toggle-items').forEach(btn => {
             btn.addEventListener('click', (event) => {
                 event.preventDefault();

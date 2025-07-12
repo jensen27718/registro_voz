@@ -67,7 +67,7 @@ class VariacionProductoForm(BaseStyledForm):
     )
 
     def __init__(self, *args, **kwargs):
-        """Filtra los valores según el producto seleccionado."""
+        """Filter values by the selected product and group them by attribute."""
         super().__init__(*args, **kwargs)
 
         producto_id = None
@@ -85,9 +85,20 @@ class VariacionProductoForm(BaseStyledForm):
             try:
                 producto = Producto.objects.select_related('categoria__tipo_producto').get(pk=producto_id)
                 tipo_id = producto.categoria.tipo_producto_id
-                self.fields['valores'].queryset = ValorAtributo.objects.filter(
+                valores_qs = ValorAtributo.objects.filter(
                     atributo_def__tipo_producto_id=tipo_id
+                ).select_related('atributo_def')
+                self.fields['valores'].queryset = valores_qs
+                atributos = (
+                    AtributoDef.objects.filter(tipo_producto_id=tipo_id)
+                    .order_by('nombre')
                 )
+                grupos = {a.nombre: [] for a in atributos}
+                for v in valores_qs:
+                    grupos[v.atributo_def.nombre].append((v.id, v.valor))
+                choices = [(a.nombre, grupos[a.nombre]) for a in atributos]
+                self.fields['valores'].choices = choices
+                self.fields['valores'].widget.choices = choices
             except Producto.DoesNotExist:
                 self.fields['valores'].queryset = ValorAtributo.objects.none()
 

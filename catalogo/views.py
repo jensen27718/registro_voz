@@ -7,6 +7,8 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
+from django.core.paginator import Paginator
+from django.db.models import Prefetch
 
 # --- IMPORTACIONES PARA AUTENTICACIÓN Y PDF (LÍNEA CORREGIDA) ---
 from django.contrib.admin.views.decorators import staff_member_required
@@ -351,14 +353,24 @@ def admin_dashboard(request):
     tipos = TipoProducto.objects.all().order_by('nombre')
     categorias = Categoria.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
     productos = Producto.objects.select_related('categoria__tipo_producto').order_by('categoria__nombre', 'nombre')
-    productos_con_vars = productos.filter(variaciones__isnull=False).distinct()
-    productos_sin_vars = productos.filter(variaciones__isnull=True)
-    variaciones_qs = VariacionProducto.objects.select_related('producto__categoria__tipo_producto').prefetch_related('valores__atributo_def')
+    productos_con_vars_qs = productos.filter(variaciones__isnull=False).distinct().prefetch_related(
+        Prefetch(
+            'variaciones',
+            queryset=VariacionProducto.objects.prefetch_related('valores__atributo_def'),
+        )
+    )
+    productos_sin_vars_qs = productos.filter(variaciones__isnull=True)
+
+    page_con = request.GET.get('page_con', 1)
+    page_sin = request.GET.get('page_sin', 1)
+    paginator_con = Paginator(productos_con_vars_qs, 10)
+    paginator_sin = Paginator(productos_sin_vars_qs, 10)
+    productos_con_vars = paginator_con.get_page(page_con)
+    productos_sin_vars = paginator_sin.get_page(page_sin)
+
     if var_prod:
-        variaciones = variaciones_qs.filter(producto_id=var_prod)
         producto_sel = productos.filter(id=var_prod).first()
     else:
-        variaciones = variaciones_qs.all()
         producto_sel = None
 
     atributos = AtributoDef.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
@@ -380,7 +392,6 @@ def admin_dashboard(request):
         'productos_con_vars': productos_con_vars,
         'productos_sin_vars': productos_sin_vars,
         'producto_sel': producto_sel,
-        'variaciones': variaciones,
 
         'atributos': atributos,
         'valores': valores,
@@ -460,7 +471,8 @@ def valores_por_producto(request):
     data = [
         {
             'id': v['id'],
-            'label': f"{v['atributo_def__nombre']}: {v['valor']}"
+            'valor': v['valor'],
+            'grupo': v['atributo_def__nombre'],
         }
         for v in valores
     ]
