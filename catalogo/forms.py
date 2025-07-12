@@ -6,6 +6,7 @@ from .models import (
     AtributoDef,
     ValorAtributo,
     VariacionProducto,
+    VariacionBase,
 )
 
 
@@ -105,3 +106,44 @@ class VariacionProductoForm(BaseStyledForm):
     class Meta:
         model = VariacionProducto
         fields = ['producto', 'precio_base', 'valores']
+
+
+class VariacionBaseForm(BaseStyledForm):
+    valores = forms.ModelMultipleChoiceField(
+        queryset=ValorAtributo.objects.none(),
+        widget=forms.SelectMultiple(attrs={"class": "border rounded p-2 w-full"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        tipo_id = None
+        field_name = 'tipo_producto'
+        if self.prefix:
+            field_name = f'{self.prefix}-{field_name}'
+        if self.data.get(field_name):
+            tipo_id = self.data.get(field_name)
+        elif self.instance.pk:
+            tipo_id = self.instance.tipo_producto_id
+        elif self.initial.get('tipo_producto'):
+            tipo_id = self.initial.get('tipo_producto')
+
+        if tipo_id:
+            valores_qs = ValorAtributo.objects.filter(
+                atributo_def__tipo_producto_id=tipo_id
+            ).select_related('atributo_def')
+            self.fields['valores'].queryset = valores_qs
+            atributos = (
+                AtributoDef.objects.filter(tipo_producto_id=tipo_id)
+                .order_by('nombre')
+            )
+            grupos = {a.nombre: [] for a in atributos}
+            for v in valores_qs:
+                grupos[v.atributo_def.nombre].append((v.id, v.valor))
+            choices = [(a.nombre, grupos[a.nombre]) for a in atributos]
+            self.fields['valores'].choices = choices
+            self.fields['valores'].widget.choices = choices
+
+    class Meta:
+        model = VariacionBase
+        fields = ['tipo_producto', 'precio_base', 'valores']
