@@ -159,6 +159,7 @@ class CargaMasivaForm(BaseStyledForm):
         fields = []
 
 
+
 class CargaImagenForm(BaseStyledForm):
     tipo_producto = forms.ModelChoiceField(queryset=TipoProducto.objects.all())
     heredar_variaciones = forms.BooleanField(required=False)
@@ -167,4 +168,5 @@ class CargaImagenForm(BaseStyledForm):
     class Meta:
         model = Producto
         fields = []
+
 
