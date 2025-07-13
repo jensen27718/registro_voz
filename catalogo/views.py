@@ -1,6 +1,9 @@
 # catalogo/views.py
 
 import json
+import csv
+import io
+import cloudinary.uploader
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -25,6 +28,8 @@ from .forms import (
     VariacionBaseForm,
     AtributoDefForm,
     ValorAtributoForm,
+    CargaMasivaForm,
+    CargaImagenForm,
 )
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
@@ -34,6 +39,91 @@ from .models import (
 )
 
 WHATSAPP_NUMBER = '573212165252'
+
+
+def _datos_desde_url(url: str):
+    """Parses product info from the image URL."""
+    fname = url.split('/')[-1]
+    fname = fname.split('.')[0]
+    parts = fname.split('-')
+    if len(parts) < 2:
+        return None
+    referencia = parts[0]
+    nombre = parts[1].lstrip('_').replace('_', ' ').strip()
+    cat_part = parts[-1]
+    cat_parts = cat_part.split('_')
+    if len(cat_parts) > 1:
+        cat_core = '_'.join(cat_parts[:-1])
+    else:
+        cat_core = cat_part
+    categoria = cat_core.replace('_', ' ').strip()
+    return referencia, nombre, categoria
+
+
+def procesar_csv_productos(file_obj, tipo: TipoProducto, heredar: bool):
+    """Crea productos y categorías desde un archivo CSV."""
+    content = file_obj.read().decode('utf-8')
+    reader = csv.reader(io.StringIO(content))
+    for row in reader:
+        if not row:
+            continue
+        url = row[0].strip()
+        if not url:
+            continue
+        parsed = _datos_desde_url(url)
+        if not parsed:
+            continue
+        referencia, nombre, cat_nombre = parsed
+        categoria, created = Categoria.objects.get_or_create(
+            tipo_producto=tipo,
+            nombre=cat_nombre,
+            defaults={'imagen_url': url},
+        )
+        producto = Producto.objects.create(
+            categoria=categoria,
+            referencia=referencia,
+            nombre=nombre,
+            foto_url=url,
+        )
+        if heredar:
+            for base in VariacionBase.objects.filter(tipo_producto=tipo):
+                var = VariacionProducto.objects.create(
+                    producto=producto,
+                    precio_base=base.precio_base,
+                )
+                var.valores.set(base.valores.all())
+
+
+def procesar_imagenes_productos(files, tipo: TipoProducto, heredar: bool):
+    """Sube imágenes a Cloudinary y crea productos y categorías."""
+    for f in files:
+        parsed = _datos_desde_url(f.name)
+        if not parsed:
+            continue
+        referencia, nombre, cat_nombre = parsed
+        try:
+            result = cloudinary.uploader.upload(f)
+        except Exception:
+            continue
+        url = result.get('secure_url') or result.get('url')
+        categoria, created = Categoria.objects.get_or_create(
+            tipo_producto=tipo,
+            nombre=cat_nombre,
+            defaults={'imagen_url': url},
+        )
+        producto = Producto.objects.create(
+            categoria=categoria,
+            referencia=referencia,
+            nombre=nombre,
+            foto_url=url,
+        )
+        if heredar:
+            for base in VariacionBase.objects.filter(tipo_producto=tipo):
+                var = VariacionProducto.objects.create(
+                    producto=producto,
+                    precio_base=base.precio_base,
+                )
+                var.valores.set(base.valores.all())
 
 
 def build_catalog_data():
@@ -283,6 +373,8 @@ def admin_dashboard(request):
     base_form = VariacionBaseForm(prefix='base', instance=VariacionBase.objects.get(id=edit_base) if edit_base else None)
     atributo_form = AtributoDefForm(prefix='atr', instance=AtributoDef.objects.get(id=edit_atr) if edit_atr else None)
     valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
+    carga_form = CargaMasivaForm(prefix='carga')
+    carga_img_form = CargaImagenForm(prefix='img')
 
     if request.method == 'POST':
         # eliminaciones
@@ -351,6 +443,24 @@ def admin_dashboard(request):
             if base_form.is_valid():
                 base_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=base")
+        if 'carga-archivo' in request.FILES:
+            carga_form = CargaMasivaForm(request.POST, request.FILES, prefix='carga')
+            if carga_form.is_valid():
+                procesar_csv_productos(
+                    carga_form.cleaned_data['archivo'],
+                    carga_form.cleaned_data['tipo_producto'],
+                    carga_form.cleaned_data['heredar_variaciones'],
+                )
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
+        if 'img-imagenes' in request.FILES:
+            carga_img_form = CargaImagenForm(request.POST, request.FILES, prefix='img')
+            if carga_img_form.is_valid():
+                procesar_imagenes_productos(
+                    request.FILES.getlist('img-imagenes'),
+                    carga_img_form.cleaned_data['tipo_producto'],
+                    carga_img_form.cleaned_data['heredar_variaciones'],
+                )
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
 
     pedidos = (
         Pedido.objects.select_related('cliente')
@@ -406,6 +516,8 @@ def admin_dashboard(request):
         'atributo_form': atributo_form,
         'valor_form': valor_form,
         'base_form': base_form,
+        'carga_form': carga_form,
+        'carga_img_form': carga_img_form,
         'clientes': clientes,
         'tipos': tipos,
         'categorias': categorias,

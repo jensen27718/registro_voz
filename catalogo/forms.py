@@ -147,3 +147,24 @@ class VariacionBaseForm(BaseStyledForm):
     class Meta:
         model = VariacionBase
         fields = ['tipo_producto', 'precio_base', 'valores']
+
+
+class CargaMasivaForm(BaseStyledForm):
+    tipo_producto = forms.ModelChoiceField(queryset=TipoProducto.objects.all())
+    heredar_variaciones = forms.BooleanField(required=False)
+    archivo = forms.FileField()
+
+    class Meta:
+        model = Producto
+        fields = []
+
+
+class CargaImagenForm(BaseStyledForm):
+    tipo_producto = forms.ModelChoiceField(queryset=TipoProducto.objects.all())
+    heredar_variaciones = forms.BooleanField(required=False)
+    imagenes = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
+
+    class Meta:
+        model = Producto
+        fields = []
+
