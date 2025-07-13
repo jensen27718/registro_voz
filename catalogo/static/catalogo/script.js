@@ -92,11 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .filter(val => val.atributoDefId === defId);
             let optionsHTML = valoresDisponibles.map(val => {
                 if (atributoDef.nombre.toLowerCase() === 'color') {
-
-                    return `<div class="variation-option color-option" data-atributo-def-id="${defId}" data-valor-id="${val.id}" style="--option-color:${val.display || '#ccc'}">${val.valor}</div>`;
-
+                    return `<button type="button" class="variation-option color-option" data-atributo-def-id="${defId}" data-valor-id="${val.id}" style="--option-color:${val.display || '#ccc'}">${val.valor}</button>`;
                 }
-                return `<div class="variation-option" data-atributo-def-id="${defId}" data-valor-id="${val.id}">${val.valor}</div>`;
+                return `<button type="button" class="variation-option" data-atributo-def-id="${defId}" data-valor-id="${val.id}">${val.valor}</button>`;
             }).join('');
             attributesHTML += `
                 <div>
@@ -248,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p id="promo-error" class="text-red-500 text-sm mt-1 h-4"></p>`
             }
         `;
+        localStorage.setItem('cart', JSON.stringify(state.cart));
     };
     
     const applyPromo = () => {
@@ -579,10 +578,28 @@ document.addEventListener('DOMContentLoaded', () => {
         promoContainer.id = 'cart-promo-section';
         promoContainer.className = 'my-4';
         cartFooter.insertBefore(promoContainer, checkoutBtn);
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('cart');
-        showPage('login-page');
-        renderCart();
+        const storedUser = localStorage.getItem('currentUser');
+        const storedCart = localStorage.getItem('cart');
+        if (storedUser) {
+            try {
+                state.currentUser = JSON.parse(storedUser);
+            } catch (e) { state.currentUser = null; }
+        }
+        if (storedCart) {
+            try {
+                state.cart = JSON.parse(storedCart);
+            } catch (e) { state.cart = { items: [], appliedPromoCode: null }; }
+        }
+        if (state.currentUser) {
+            fetch(`/catalogo/api/cart/?phone=${state.currentUser.phone}`)
+                .then(res => res.ok ? res.json() : Promise.reject())
+                .then(data => { state.cart = data; renderCart(); })
+                .catch(() => { renderCart(); });
+            navigateTo('tiposProducto');
+        } else {
+            showPage('login-page');
+            renderCart();
+        }
         updateBreadcrumb();
     };
 
