@@ -527,7 +527,6 @@ def admin_dashboard(request):
         'valor_form': valor_form,
         'base_form': base_form,
         'carga_form': carga_form,
-
         'carga_img_form': carga_img_form,
 
         'clientes': clientes,
