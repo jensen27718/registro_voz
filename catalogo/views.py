@@ -3,6 +3,9 @@
 import json
 import csv
 import io
+
+import cloudinary.uploader
+
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -28,6 +31,9 @@ from .forms import (
     AtributoDefForm,
     ValorAtributoForm,
     CargaMasivaForm,
+
+    CargaImagenForm,
+
 )
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
@@ -90,6 +96,40 @@ def procesar_csv_productos(file_obj, tipo: TipoProducto, heredar: bool):
                     precio_base=base.precio_base,
                 )
                 var.valores.set(base.valores.all())
+
+
+
+def procesar_imagenes_productos(files, tipo: TipoProducto, heredar: bool):
+    """Sube imágenes a Cloudinary y crea productos y categorías."""
+    for f in files:
+        parsed = _datos_desde_url(f.name)
+        if not parsed:
+            continue
+        referencia, nombre, cat_nombre = parsed
+        try:
+            result = cloudinary.uploader.upload(f)
+        except Exception:
+            continue
+        url = result.get('secure_url') or result.get('url')
+        categoria, created = Categoria.objects.get_or_create(
+            tipo_producto=tipo,
+            nombre=cat_nombre,
+            defaults={'imagen_url': url},
+        )
+        producto = Producto.objects.create(
+            categoria=categoria,
+            referencia=referencia,
+            nombre=nombre,
+            foto_url=url,
+        )
+        if heredar:
+            for base in VariacionBase.objects.filter(tipo_producto=tipo):
+                var = VariacionProducto.objects.create(
+                    producto=producto,
+                    precio_base=base.precio_base,
+                )
+                var.valores.set(base.valores.all())
+
 
 
 def build_catalog_data():
@@ -341,6 +381,9 @@ def admin_dashboard(request):
     valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
     carga_form = CargaMasivaForm(prefix='carga')
 
+    carga_img_form = CargaImagenForm(prefix='img')
+
+
     if request.method == 'POST':
         # eliminaciones
         if 'delete_tipo' in request.POST:
@@ -418,6 +461,17 @@ def admin_dashboard(request):
                 )
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
 
+        if 'img-imagenes' in request.FILES:
+            carga_img_form = CargaImagenForm(request.POST, request.FILES, prefix='img')
+            if carga_img_form.is_valid():
+                procesar_imagenes_productos(
+                    request.FILES.getlist('img-imagenes'),
+                    carga_img_form.cleaned_data['tipo_producto'],
+                    carga_img_form.cleaned_data['heredar_variaciones'],
+                )
+                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
+
+
     pedidos = (
         Pedido.objects.select_related('cliente')
         .prefetch_related(
@@ -473,6 +527,9 @@ def admin_dashboard(request):
         'valor_form': valor_form,
         'base_form': base_form,
         'carga_form': carga_form,
+
+        'carga_img_form': carga_img_form,
+
         'clientes': clientes,
         'tipos': tipos,
         'categorias': categorias,
