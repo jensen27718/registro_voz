@@ -3,7 +3,9 @@
 import json
 import csv
 import io
+
 import cloudinary.uploader
+
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -29,7 +31,9 @@ from .forms import (
     AtributoDefForm,
     ValorAtributoForm,
     CargaMasivaForm,
+
     CargaImagenForm,
+
 )
 from .models import (
     Cliente, Administrador, TipoProducto, Categoria, Producto,
@@ -94,6 +98,7 @@ def procesar_csv_productos(file_obj, tipo: TipoProducto, heredar: bool):
                 var.valores.set(base.valores.all())
 
 
+
 def procesar_imagenes_productos(files, tipo: TipoProducto, heredar: bool):
     """Sube imágenes a Cloudinary y crea productos y categorías."""
     for f in files:
@@ -124,6 +129,7 @@ def procesar_imagenes_productos(files, tipo: TipoProducto, heredar: bool):
                     precio_base=base.precio_base,
                 )
                 var.valores.set(base.valores.all())
+
 
 
 def build_catalog_data():
@@ -374,7 +380,9 @@ def admin_dashboard(request):
     atributo_form = AtributoDefForm(prefix='atr', instance=AtributoDef.objects.get(id=edit_atr) if edit_atr else None)
     valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
     carga_form = CargaMasivaForm(prefix='carga')
+
     carga_img_form = CargaImagenForm(prefix='img')
+
 
     if request.method == 'POST':
         # eliminaciones
@@ -452,6 +460,7 @@ def admin_dashboard(request):
                     carga_form.cleaned_data['heredar_variaciones'],
                 )
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
+
         if 'img-imagenes' in request.FILES:
             carga_img_form = CargaImagenForm(request.POST, request.FILES, prefix='img')
             if carga_img_form.is_valid():
@@ -461,6 +470,7 @@ def admin_dashboard(request):
                     carga_img_form.cleaned_data['heredar_variaciones'],
                 )
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
+
 
     pedidos = (
         Pedido.objects.select_related('cliente')
@@ -518,6 +528,7 @@ def admin_dashboard(request):
         'base_form': base_form,
         'carga_form': carga_form,
         'carga_img_form': carga_img_form,
+
         'clientes': clientes,
         'tipos': tipos,
         'categorias': categorias,
