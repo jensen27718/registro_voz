@@ -21,6 +21,7 @@
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=tipo" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'tipo' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Tipos</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=categoria" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'categoria' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Categorías</a></li>
     <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=cliente" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'cliente' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Clientes</a></li>
+    <li class="mr-2"><a href="{% url 'catalogo:admin_dashboard' %}?section=carga" class="inline-flex p-4 rounded-t-lg border-b-2 {% if section == 'carga' %}text-blue-600 border-blue-600 active{% else %}border-transparent hover:text-gray-600 hover:border-gray-300{% endif %}">Carga Lote</a></li>
   </ul>
 </nav>
 
@@ -574,6 +575,26 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
+    {% elif section == 'carga' %}
+      <h2 class="text-2xl font-bold text-gray-800">Carga de Productos en Lote</h2>
+      <div class="bg-white p-6 rounded-lg shadow md:w-1/3 space-y-6">
+        <div>
+          <h3 class="font-semibold">Desde CSV</h3>
+          <form method="post" enctype="multipart/form-data" class="space-y-4 mt-2">
+            {% csrf_token %}
+            {{ carga_form.as_p }}
+            <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Subir</button>
+          </form>
+        </div>
+        <div>
+          <h3 class="font-semibold">Desde Imágenes</h3>
+          <form method="post" enctype="multipart/form-data" class="space-y-4 mt-2">
+            {% csrf_token %}
+            {{ carga_img_form.as_p }}
+            <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md font-bold hover:bg-green-600 transition-colors">Subir</button>
+          </form>
+        </div>
       </div>
     {% endif %}
   </div>
