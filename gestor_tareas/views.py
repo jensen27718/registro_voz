@@ -120,7 +120,7 @@ def analizar_texto_tarea(request):
             }}
         }}
         """
-        model = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         # Limpia la respuesta de la IA para asegurar que sea un JSON válido.

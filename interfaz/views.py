@@ -115,7 +115,7 @@ def analizar_texto(request):
             }}
         }}
         """
-        model = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         cleaned = response.text.strip().replace('`', '').replace('json', '')
         ai_response = json.loads(cleaned)

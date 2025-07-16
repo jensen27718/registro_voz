@@ -30,7 +30,6 @@ from .forms import (
     VariacionBaseForm,
     AtributoDefForm,
     ValorAtributoForm,
-    CargaMasivaForm,
 
     CargaImagenForm,
 
@@ -45,95 +44,84 @@ from .models import (
 WHATSAPP_NUMBER = '573212165252'
 
 
+
+
 def _datos_desde_url(url: str):
-    """Parses product info from the image URL."""
+    """
+    Parsea la información del producto desde el nombre del archivo.
+    Formato esperado: "Referencia - Nombre Producto - Categoria1 - Categoria2.jpg"
+    """
     fname = url.split('/')[-1]
-    fname = fname.split('.')[0]
-    parts = fname.split('-')
-    if len(parts) < 2:
+    try:
+        fname_base = fname[:fname.rindex('.')]
+    except ValueError:
+        fname_base = fname
+
+    parts = [p.strip() for p in fname_base.split('-')]
+    
+    # Debe haber al menos 3 partes: referencia, nombre, y al menos una categoría.
+    if len(parts) < 3:
+        print(f"Skipping file with invalid name format: {fname}")
         return None
+    
     referencia = parts[0]
-    nombre = parts[1].lstrip('_').replace('_', ' ').strip()
-    cat_part = parts[-1]
-    cat_parts = cat_part.split('_')
-    if len(cat_parts) > 1:
-        cat_core = '_'.join(cat_parts[:-1])
-    else:
-        cat_core = cat_part
-    categoria = cat_core.replace('_', ' ').strip()
-    return referencia, nombre, categoria
+    nombre = parts[1]
+    # Todas las partes restantes son nombres de categorías.
+    cat_nombres = parts[2:]
 
-
-def procesar_csv_productos(file_obj, tipo: TipoProducto, heredar: bool):
-    """Crea productos y categorías desde un archivo CSV."""
-    content = file_obj.read().decode('utf-8')
-    reader = csv.reader(io.StringIO(content))
-    for row in reader:
-        if not row:
-            continue
-        url = row[0].strip()
-        if not url:
-            continue
-        parsed = _datos_desde_url(url)
-        if not parsed:
-            continue
-        referencia, nombre, cat_nombre = parsed
-        categoria, created = Categoria.objects.get_or_create(
-            tipo_producto=tipo,
-            nombre=cat_nombre,
-            defaults={'imagen_url': url},
-        )
-        producto = Producto.objects.create(
-            categoria=categoria,
-            referencia=referencia,
-            nombre=nombre,
-            foto_url=url,
-        )
-        if heredar:
-            for base in VariacionBase.objects.filter(tipo_producto=tipo):
-                var = VariacionProducto.objects.create(
-                    producto=producto,
-                    precio_base=base.precio_base,
-                )
-                var.valores.set(base.valores.all())
+    return referencia, nombre, cat_nombres
 
 
 
 def procesar_imagenes_productos(files, tipo: TipoProducto, heredar: bool):
-    """Sube imágenes a Cloudinary y crea productos y categorías."""
+    """Sube imágenes a Cloudinary y crea/actualiza productos y categorías."""
     for f in files:
         parsed = _datos_desde_url(f.name)
         if not parsed:
             continue
-        referencia, nombre, cat_nombre = parsed
+        referencia, nombre, cat_nombres = parsed
+        
         try:
             result = cloudinary.uploader.upload(f)
-        except Exception:
+            url = result.get('secure_url') or result.get('url')
+        except Exception as e:
+            print(f"Error al subir {f.name} a Cloudinary: {e}")
             continue
-        url = result.get('secure_url') or result.get('url')
-        categoria, created = Categoria.objects.get_or_create(
-            tipo_producto=tipo,
-            nombre=cat_nombre,
-            defaults={'imagen_url': url},
-        )
-        producto = Producto.objects.create(
-            categoria=categoria,
-            referencia=referencia,
-            nombre=nombre,
-            foto_url=url,
-        )
-        if heredar:
-            for base in VariacionBase.objects.filter(tipo_producto=tipo):
-                var = VariacionProducto.objects.create(
-                    producto=producto,
-                    precio_base=base.precio_base,
+        
+        with transaction.atomic():
+            # Obtener o crear todas las categorías necesarias
+            categorias_obj = []
+            for cat_nombre in cat_nombres:
+                categoria, _ = Categoria.objects.get_or_create(
+                    tipo_producto=tipo,
+                    nombre=cat_nombre,
+                    defaults={'imagen_url': url},
                 )
-                var.valores.set(base.valores.all())
+                categorias_obj.append(categoria)
 
+            # Crear o actualizar el producto
+            producto, created = Producto.objects.update_or_create(
+                referencia=referencia,
+                defaults={'nombre': nombre, 'foto_url': url}
+            )
+            
+            # Asignar las múltiples categorías al producto
+            if categorias_obj:
+                producto.categorias.set(categorias_obj)
+            
+            # Aplicar variaciones base si el producto es nuevo
+            if heredar and created:
+                for base in VariacionBase.objects.filter(tipo_producto=tipo):
+                    var = VariacionProducto.objects.create(
+                        producto=producto,
+                        precio_base=base.precio_base,
+                    )
+                    var.valores.set(base.valores.all())
 
 
 def build_catalog_data():
     """Construye el diccionario de datos inicial para el frontend."""
+    productos_qs = Producto.objects.prefetch_related('categorias').all()
     return {
         'tiposProducto': [
             {
@@ -156,12 +144,15 @@ def build_catalog_data():
         'productos': [
             {
                 'id': p.id,
-                'categoriaId': p.categoria_id,
+                # --- LÍNEAS MODIFICADAS ---
+                # Ya no existe 'categoriaId'. En su lugar, enviamos una lista de IDs.
+                # Renombramos a 'categoriaIds' (plural) para que sea claro en el frontend.
+                'categoriaIds': list(p.categorias.values_list('id', flat=True)),
                 'nombre': p.nombre,
                 'referencia': p.referencia,
                 'foto_url': p.foto_url,
             }
-            for p in Producto.objects.all()
+            for p in productos_qs  # Usamos la consulta optimizada
         ],
         'atributoDefs': [
             {
@@ -379,7 +370,7 @@ def admin_dashboard(request):
     base_form = VariacionBaseForm(prefix='base', instance=VariacionBase.objects.get(id=edit_base) if edit_base else None)
     atributo_form = AtributoDefForm(prefix='atr', instance=AtributoDef.objects.get(id=edit_atr) if edit_atr else None)
     valor_form = ValorAtributoForm(prefix='val', instance=ValorAtributo.objects.get(id=edit_val) if edit_val else None)
-    carga_form = CargaMasivaForm(prefix='carga')
+    
 
     carga_img_form = CargaImagenForm(prefix='img')
 
@@ -451,15 +442,7 @@ def admin_dashboard(request):
             if base_form.is_valid():
                 base_form.save()
                 return redirect(f"{reverse('catalogo:admin_dashboard')}?section=base")
-        if 'carga-archivo' in request.FILES:
-            carga_form = CargaMasivaForm(request.POST, request.FILES, prefix='carga')
-            if carga_form.is_valid():
-                procesar_csv_productos(
-                    carga_form.cleaned_data['archivo'],
-                    carga_form.cleaned_data['tipo_producto'],
-                    carga_form.cleaned_data['heredar_variaciones'],
-                )
-                return redirect(f"{reverse('catalogo:admin_dashboard')}?section=carga")
+
 
         if 'img-imagenes' in request.FILES:
             carga_img_form = CargaImagenForm(request.POST, request.FILES, prefix='img')
@@ -484,9 +467,10 @@ def admin_dashboard(request):
     clientes = Cliente.objects.all().order_by('nombre')
     tipos = TipoProducto.objects.all().order_by('nombre')
     categorias = Categoria.objects.select_related('tipo_producto').order_by('tipo_producto__nombre', 'nombre')
-    productos = Producto.objects.select_related('categoria__tipo_producto').order_by('categoria__nombre', 'nombre')
+    productos = Producto.objects.prefetch_related('categorias').order_by('nombre')
 
     productos_con_vars_qs = productos.filter(variaciones__isnull=False).distinct().prefetch_related(
+        'categorias',
         Prefetch(
             'variaciones',
             queryset=VariacionProducto.objects.prefetch_related('valores__atributo_def'),
@@ -526,7 +510,6 @@ def admin_dashboard(request):
         'atributo_form': atributo_form,
         'valor_form': valor_form,
         'base_form': base_form,
-        'carga_form': carga_form,
         'carga_img_form': carga_img_form,
 
         'clientes': clientes,
@@ -701,8 +684,9 @@ def api_productos(request):
         data = [
             {
                 "id": p.id,
-                "categoriaId": p.categoria_id,
-                "categoria": p.categoria.nombre,
+                # Devolvemos una lista de IDs y nombres de categorías
+                "categoriaIds": list(p.categorias.values_list('id', flat=True)),
+                "categorias": list(p.categorias.values_list('nombre', flat=True)),
                 "referencia": p.referencia,
                 "nombre": p.nombre,
                 "foto_url": p.foto_url,
@@ -762,8 +746,8 @@ def api_producto_detail(request, producto_id):
         return JsonResponse(
             {
                 "id": producto.id,
-                "categoriaId": producto.categoria_id,
-                "categoria": producto.categoria.nombre,
+                "categoriaIds": list(producto.categorias.values_list('id', flat=True)),
+                "categorias": list(producto.categorias.values_list('nombre', flat=True)),
                 "referencia": producto.referencia,
                 "nombre": producto.nombre,
                 "foto_url": producto.foto_url,

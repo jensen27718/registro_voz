@@ -27,6 +27,7 @@ class TipoProductoForm(BaseStyledForm):
         fields = ['nombre', 'descripcion', 'imagen_url']
 
 
+
 class CategoriaForm(BaseStyledForm):
 
     class Meta:
@@ -38,7 +39,7 @@ class ProductoForm(BaseStyledForm):
 
     class Meta:
         model = Producto
-        fields = ['categoria', 'referencia', 'nombre', 'foto_url']
+        fields = ['categorias', 'referencia', 'nombre', 'foto_url']
 
 
 class AtributoDefForm(BaseStyledForm):
@@ -149,22 +150,20 @@ class VariacionBaseForm(BaseStyledForm):
         fields = ['tipo_producto', 'precio_base', 'valores']
 
 
-class CargaMasivaForm(BaseStyledForm):
-    tipo_producto = forms.ModelChoiceField(queryset=TipoProducto.objects.all())
-    heredar_variaciones = forms.BooleanField(required=False)
-    archivo = forms.FileField()
-
-    class Meta:
-        model = Producto
-        fields = []
 
 
 
 class CargaImagenForm(BaseStyledForm):
     tipo_producto = forms.ModelChoiceField(queryset=TipoProducto.objects.all())
-    heredar_variaciones = forms.BooleanField(required=False)
-    
-
+    heredar_variaciones = forms.BooleanField(required=False, label="Heredar variaciones base")
+    imagenes = forms.FileField(
+        label="Seleccionar Imágenes",
+        # --- LÍNEA CORREGIDA ---
+        # Le decimos al campo que no es obligatorio. Esto desactiva la validación estricta
+        # que causa el error y nos permite manejar la lista de archivos en la vista.
+        required=False,
+        widget=forms.FileInput()
+    )
 
     class Meta:
         model = Producto

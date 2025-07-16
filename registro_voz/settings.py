@@ -1,7 +1,9 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import cloudinary
 
+import urllib.parse # <-- Importamos la librería para parsear URLs
 # Cargar variables de entorno desde .env
 load_dotenv()
 
@@ -115,3 +117,24 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# --- NUEVO BLOQUE DE CONFIGURACIÓN DE CLOUDINARY USANDO URL ---
+cloudinary_url = os.environ.get('CLOUDINARY_URL')
+
+# Verificamos que la variable exista antes de intentar configurarla
+if cloudinary_url:
+    # Descomponemos la URL en sus partes
+    parsed_url = urllib.parse.urlparse(cloudinary_url)
+    
+    # Configuramos la librería usando las partes de la URL
+    cloudinary.config(
+      cloud_name = parsed_url.hostname,
+      api_key = parsed_url.username,
+      api_secret = parsed_url.password,
+      secure = True
+    )
+# ----------------------------------------------------------------
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent

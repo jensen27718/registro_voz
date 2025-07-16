@@ -49,20 +49,24 @@ class Categoria(models.Model):
         return f"{self.tipo_producto.nombre} - {self.nombre}"
 
 
+# catalogo/models.py
+
 class Producto(models.Model):
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name="productos")
+    # ELIMINAMOS EL CAMPO ANTIGUO
+    # categoria = models.ForeignKey(...)
+
+    # DEJAMOS SOLO EL CAMPO NUEVO (y podemos quitarle el blank=True si queremos que sea obligatorio)
+    categorias = models.ManyToManyField(Categoria, related_name="productos")
+    
     referencia = models.CharField(max_length=100)
     nombre = models.CharField(max_length=150)
     foto_url = models.URLField(blank=True)
 
     class Meta:
-        unique_together = ("categoria", "referencia")
         ordering = ["nombre"]
 
     def __str__(self):
-        """Mostrar solo la referencia junto con la categoría."""
-        return f"{self.categoria.nombre} - {self.referencia}"
-
+        return self.referencia
 
 class AtributoDef(models.Model):
     tipo_producto = models.ForeignKey(TipoProducto, on_delete=models.CASCADE, related_name="atributos")
@@ -133,7 +137,12 @@ class VariacionProducto(models.Model):
     def __str__(self):
         """Descripción de la variación usando referencia y categoría."""
         valores_str = ", ".join([v.valor for v in self.valores.all()])
-        return f"{self.producto.categoria.nombre}: {self.producto.referencia} ({valores_str})"
+        # --- LÍNEA MODIFICADA ---
+        # Ya no usamos self.producto.categoria.nombre. Usamos solo la referencia.
+        # Si quisieras mostrar la primera categoría, podrías hacer:
+        # primera_cat = self.producto.categorias.first()
+        # cat_nombre = primera_cat.nombre if primera_cat else "Sin categoría"
+        return f"{self.producto.referencia} ({valores_str})"
 
 
 class Carrito(models.Model):

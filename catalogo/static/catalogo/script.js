@@ -508,7 +508,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const cat = DATA.categorias.find(c => c.id === categoriaId);
         productsTitle.textContent = cat ? cat.nombre : '';
         productsGrid.innerHTML = DATA.productos
-            .filter(p => p.categoriaId === categoriaId)
+            // --- LÍNEA MODIFICADA ---
+            // Cambiamos p.categoriaId === categoriaId por p.categoriaIds.includes(categoriaId)
+            .filter(p => p.categoriaIds.includes(categoriaId))
             .map(prod => `<div class="product-card cursor-pointer" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.referencia}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.referencia}</h4></div></div>`)
             .join('');
         showPage('products-page');
