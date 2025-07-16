@@ -1,49 +1,63 @@
+# registro_voz/settings.py
+
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 import cloudinary
+import urllib.parse  # Importamos la librería para parsear
 
-import urllib.parse # <-- Importamos la librería para parsear URLs
-# Cargar variables de entorno desde .env
-load_dotenv()
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# --- 1. CONFIGURACIÓN DE RUTAS ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+# --- 2. LÓGICA DE CONFIGURACIÓN DUAL (PRODUCCIÓN vs. LOCAL) ---
 
-# settings.py - CÓDIGO UNIFICADO
+# Intentamos importar desde 'secrets.py'. Si tiene éxito, estamos en producción.
 try:
-    # Intenta importar desde el archivo de secretos (esto funcionará en el servidor)
     from . import secrets
-except ImportError:
-    # Si falla, significa que estamos en local y no hay secrets.py
-    secrets = None
-
-# Si 'secrets' fue importado y tiene la clave, úsala.
-if hasattr(secrets, 'DJANGO_SECRET_KEY'):
+    
+    # --- CONFIGURACIÓN PARA PRODUCCIÓN (PythonAnywhere) ---
     SECRET_KEY = secrets.DJANGO_SECRET_KEY
-else:
-    # Si no, usa la variable de entorno de tu archivo local .env
+    DEBUG = False
+    
+    # Ponemos la CLOUDINARY_URL en el entorno para que la librería la detecte.
+    if hasattr(secrets, 'CLOUDINARY_URL'):
+        os.environ['CLOUDINARY_URL'] = secrets.CLOUDINARY_URL
+    # No necesitamos hacer nada más para Cloudinary en producción.
+    # La librería se autoconfigurará al ser importada.
+
+# Si 'secrets.py' no existe, estamos en desarrollo local.
+except ImportError:
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # --- CONFIGURACIÓN PARA DESARROLLO LOCAL ---
     SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+    DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
+    
+    # --- BLOQUE PARA LOCAL QUE NECESITAS ---
+    # Leemos la variable CLOUDINARY_URL del archivo .env
+    cloudinary_url_local = os.environ.get('CLOUDINARY_URL')
+    
+    # Verificamos que la variable exista antes de intentar configurarla
+    if cloudinary_url_local:
+        # Descomponemos la URL en sus partes
+        parsed_url = urllib.parse.urlparse(cloudinary_url_local)
+        
+        # Configuramos la librería explícitamente usando las partes de la URL
+        cloudinary.config(
+          cloud_name = parsed_url.hostname,
+          api_key = parsed_url.username,
+          api_secret = parsed_url.password,
+          secure = True
+        )
+    # ----------------------------------------
 
-# Para el DEBUG, la lógica se mantiene, leerá de tu .env local.
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# --- 3. CONFIGURACIÓN DE SEGURIDAD Y APLICACIÓN ---
 
+ALLOWED_HOSTS = ['jensenjp08.pythonanywhere.com']
+if DEBUG:
+    ALLOWED_HOSTS.extend(['127.0.0.1', 'localhost'])
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-
-# Configuración para PythonAnywhere y desarrollo local
-ALLOWED_HOSTS = [
-    'jensenjp08.pythonanywhere.com',  # Reemplaza 'tu-usuario' con tu nombre de usuario de PythonAnywhere
-    '127.0.0.1',
-    'localhost'
-]
-
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -51,9 +65,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'interfaz', # Nuestra app
+    'interfaz',
     'gestor_tareas',
     'catalogo',
+    'cloudinary',
 ]
 
 MIDDLEWARE = [
@@ -86,9 +101,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'registro_voz.wsgi.application'
 
-# Database
-# Usamos la base de datos SQLite por defecto, que no requiere configuración adicional.
-# Es suficiente ya que no almacenaremos datos en ella.
+
+# --- 4. BASE DE DATOS Y OTROS AJUSTES ---
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -96,45 +111,22 @@ DATABASES = {
     }
 }
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    # ... (validadores por defecto)
+    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-# Directorio para archivos estáticos en producción (requerido por PythonAnywhere)
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
-
-
-
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-# --- NUEVO BLOQUE DE CONFIGURACIÓN DE CLOUDINARY USANDO URL ---
-cloudinary_url = os.environ.get('CLOUDINARY_URL')
-
-# Verificamos que la variable exista antes de intentar configurarla
-if cloudinary_url:
-    # Descomponemos la URL en sus partes
-    parsed_url = urllib.parse.urlparse(cloudinary_url)
-    
-    # Configuramos la librería usando las partes de la URL
-    cloudinary.config(
-      cloud_name = parsed_url.hostname,
-      api_key = parsed_url.username,
-      api_secret = parsed_url.password,
-      secure = True
-    )
-# ----------------------------------------------------------------
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
