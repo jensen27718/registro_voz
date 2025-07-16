@@ -3,6 +3,7 @@
 import json
 import csv
 import io
+import logging
 
 import cloudinary.uploader
 
@@ -44,7 +45,7 @@ from .models import (
 WHATSAPP_NUMBER = '573212165252'
 
 
-
+logger = logging.getLogger(__name__)
 
 def _datos_desde_url(url: str):
     """
@@ -82,11 +83,14 @@ def procesar_imagenes_productos(files, tipo: TipoProducto, heredar: bool):
         referencia, nombre, cat_nombres = parsed
         
         try:
+            logger.info(f"Intentando subir el archivo: {f.name}") # Log para ver si llega aquí
             result = cloudinary.uploader.upload(f)
             url = result.get('secure_url') or result.get('url')
+            logger.info(f"Subida exitosa para {f.name}")
         except Exception as e:
-            print(f"Error al subir {f.name} a Cloudinary: {e}")
-            continue
+            # ESTO FORZARÁ EL ERROR A APARECER EN EL ERROR LOG
+            logger.error(f"FALLO al subir {f.name} a Cloudinary: {e}", exc_info=True)
+            continue # Continúa con el siguiente archivo
         
         with transaction.atomic():
             # Obtener o crear todas las categorías necesarias
