@@ -3,12 +3,15 @@
 import os
 from pathlib import Path
 import cloudinary
-import urllib.parse  # Importamos la librería para parsear
+import urllib.parse
 
 # --- 1. CONFIGURACIÓN DE RUTAS ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- 2. LÓGICA DE CONFIGURACIÓN DUAL (PRODUCCIÓN vs. LOCAL) ---
+
+# Variable para almacenar la URL de Cloudinary
+cloudinary_url = None
 
 # Intentamos importar desde 'secrets.py'. Si tiene éxito, estamos en producción.
 try:
@@ -18,11 +21,8 @@ try:
     SECRET_KEY = secrets.DJANGO_SECRET_KEY
     DEBUG = False
     
-    # Ponemos la CLOUDINARY_URL en el entorno para que la librería la detecte.
     if hasattr(secrets, 'CLOUDINARY_URL'):
-        os.environ['CLOUDINARY_URL'] = secrets.CLOUDINARY_URL
-    # No necesitamos hacer nada más para Cloudinary en producción.
-    # La librería se autoconfigurará al ser importada.
+        cloudinary_url = secrets.CLOUDINARY_URL
 
 # Si 'secrets.py' no existe, estamos en desarrollo local.
 except ImportError:
@@ -33,14 +33,17 @@ except ImportError:
     SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
     DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
     
-    # --- BLOQUE PARA LOCAL QUE NECESITAS ---
-    # Leemos la variable CLOUDINARY_URL del archivo .env
-    cloudinary_url_local = os.environ.get('CLOUDINARY_URL')
-    
-    # Verificamos que la variable exista antes de intentar configurarla
-    if cloudinary_url_local:
+    cloudinary_url = os.environ.get('CLOUDINARY_URL')
+
+
+# --- 3. CONFIGURACIÓN EXPLÍCITA DE CLOUDINARY (UNIFICADA) ---
+# Este bloque se ejecuta para ambos entornos, usando la variable `cloudinary_url`
+# que se haya obtenido en el paso anterior.
+
+if cloudinary_url:
+    try:
         # Descomponemos la URL en sus partes
-        parsed_url = urllib.parse.urlparse(cloudinary_url_local)
+        parsed_url = urllib.parse.urlparse(cloudinary_url)
         
         # Configuramos la librería explícitamente usando las partes de la URL
         cloudinary.config(
@@ -49,10 +52,15 @@ except ImportError:
           api_secret = parsed_url.password,
           secure = True
         )
-    # ----------------------------------------
+        print("INFO: Cloudinary configurado exitosamente.") # Mensaje de confirmación
+    except Exception as e:
+        print(f"ERROR: Falló la configuración de Cloudinary - {e}")
+
+else:
+    print("ADVERTENCIA: CLOUDINARY_URL no encontrada. La subida de imágenes fallará.")
 
 
-# --- 3. CONFIGURACIÓN DE SEGURIDAD Y APLICACIÓN ---
+# --- 4. CONFIGURACIÓN DE SEGURIDAD Y APLICACIÓN ---
 
 ALLOWED_HOSTS = ['jensenjp08.pythonanywhere.com']
 if DEBUG:
@@ -102,7 +110,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'registro_voz.wsgi.application'
 
 
-# --- 4. BASE DE DATOS Y OTROS AJUSTES ---
+# --- 5. BASE DE DATOS Y OTROS AJUSTES ---
 
 DATABASES = {
     'default': {
