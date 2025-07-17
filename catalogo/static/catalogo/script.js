@@ -177,8 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showConfirmationToast();
     };
 
-    const renderCart = () => {
-        const { items, appliedPromoCode } = state.cart;
+const renderCart = () => {
+        const { items } = state.cart;
         const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
         cartCount.textContent = totalItems;
         if (totalItems > 0) {
@@ -212,13 +212,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtotal = items.reduce((sum, item) => sum + item.priceBase * item.quantity, 0);
         let discount = 0;
         let promo = null;
+        /* Promo code feature disabled for now
         if (appliedPromoCode) {
             promo = DATA.promos.find(p => p.codigo === appliedPromoCode);
             if (promo) discount = subtotal * (promo.porcentaje / 100);
         }
+        */
         const total = subtotal - discount;
         const totalsElement = cartFooter.querySelector('#cart-totals-summary');
-        const promoElement = cartFooter.querySelector('#cart-promo-section');
         totalsElement.innerHTML = `
             <div class="flex justify-between items-center text-lg">
                 <span>Subtotal:</span>
@@ -233,6 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="text-xl font-bold">Total:</span>
                 <span class="text-2xl font-extrabold text-gray-900">$${total.toLocaleString('es-CO')}</span>
             </div>`;
+        const promoElement = cartFooter.querySelector('#cart-promo-section');
+        /* Promo code UI disabled
         promoElement.innerHTML = `
             ${promo ? `
             <div class="text-center text-green-600 font-bold mb-2">
@@ -246,9 +249,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <p id="promo-error" class="text-red-500 text-sm mt-1 h-4"></p>`
             }
         `;
+        */
+        if (promoElement) promoElement.innerHTML = '';
         localStorage.setItem('cart', JSON.stringify(state.cart));
     };
-    
+
+    /*
     const applyPromo = () => {
         const input = document.getElementById('promo-code-input');
         const errorP = document.getElementById('promo-error');
@@ -269,11 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
         state.cart.appliedPromoCode = null;
         renderCart();
     };
+    */
+    
 
     const handleCheckout = async () => {
         if (!state.currentUser) { alert("Por favor, inicia sesión para continuar."); toggleCart(false); showPage('login-page'); return; }
         let message = `¡Hola! 👋 Quisiera hacer el siguiente pedido:\n\n`;
-        const { items, appliedPromoCode } = state.cart;
+        const { items } = state.cart;
         items.forEach(item => {
             const atributosDesc = item.atributos.map(a => `${a.nombre}: ${a.valor}`).join('\n  - ');
             message += `*Producto:* ${item.name}\n  - ${atributosDesc}\n  - Cantidad: ${item.quantity}\n  - Precio Base: $${(item.priceBase * item.quantity).toLocaleString('es-CO')}\n\n`;
@@ -281,23 +289,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtotal = items.reduce((sum, item) => sum + item.priceBase * item.quantity, 0);
         let discount = 0;
         let promo = null;
+        /* Promo code feature disabled for now
         if (appliedPromoCode) {
             promo = DATA.promos.find(p => p.codigo === appliedPromoCode);
             if (promo) discount = subtotal * (promo.porcentaje / 100);
         }
+        */
         const total = subtotal - discount;
         message += `*Subtotal:* $${subtotal.toLocaleString('es-CO')}\n`;
-        if (promo) {
+        /* if (promo) {
             message += `*Descuento (${promo.porcentaje}%):* -$${discount.toLocaleString('es-CO')}\n`;
-        }
+        }*/
         message += `*TOTAL DEL PEDIDO: $${total.toLocaleString('es-CO')}*\n\n`;
         message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Ciudad: ${state.currentUser.city}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
         const response = await fetch('/catalogo/api/pedido/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ 
-                cliente: state.currentUser, 
-                promoCode: appliedPromoCode 
+            body: JSON.stringify({
+                cliente: state.currentUser,
+                // promoCode: appliedPromoCode
             })
         });
         if (!response.ok) {
@@ -568,18 +578,22 @@ document.addEventListener('DOMContentLoaded', () => {
             changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), -Infinity);
         }
     });
+    /* Promo code actions disabled
     cartFooter.addEventListener('click', e => {
         if (e.target.id === 'apply-promo-btn') applyPromo();
         if (e.target.id === 'remove-promo-btn') removePromo();
     });
+    */
 
     const init = () => {
         const totalContainer = document.getElementById('cart-total')?.parentElement;
         if(totalContainer) totalContainer.id = 'cart-totals-summary';
+        /* Promo code UI container disabled
         const promoContainer = document.createElement('div');
         promoContainer.id = 'cart-promo-section';
         promoContainer.className = 'my-4';
         cartFooter.insertBefore(promoContainer, checkoutBtn);
+        */
         const storedUser = localStorage.getItem('currentUser');
         const storedCart = localStorage.getItem('cart');
         if (storedUser) {
