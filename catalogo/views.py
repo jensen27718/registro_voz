@@ -263,7 +263,7 @@ def cart_view(request):
                 items.append({
                     'variationId': item.variacion.id,
                     'productoId': item.variacion.producto.id,
-                    'name': item.variacion.producto.nombre,
+                    'name': item.variacion.producto.referencia,
                     'image': item.variacion.producto.foto_url,
                     'priceBase': float(item.variacion.precio_base),
                     'quantity': item.cantidad,

@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderCart = () => {
-        const { items, appliedPromoCode } = state.cart;
+        const { items } = state.cart;
         const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
         cartCount.textContent = totalItems;
         if (totalItems > 0) {
@@ -210,94 +210,41 @@ document.addEventListener('DOMContentLoaded', () => {
             checkoutBtn.disabled = false;
         }
         const subtotal = items.reduce((sum, item) => sum + item.priceBase * item.quantity, 0);
-        let discount = 0;
-        let promo = null;
-        if (appliedPromoCode) {
-            promo = DATA.promos.find(p => p.codigo === appliedPromoCode);
-            if (promo) discount = subtotal * (promo.porcentaje / 100);
-        }
-        const total = subtotal - discount;
+        const total = subtotal;
         const totalsElement = cartFooter.querySelector('#cart-totals-summary');
-        const promoElement = cartFooter.querySelector('#cart-promo-section');
         totalsElement.innerHTML = `
             <div class="flex justify-between items-center text-lg">
                 <span>Subtotal:</span>
                 <span class="font-semibold">$${subtotal.toLocaleString('es-CO')}</span>
             </div>
-            ${promo ? `
-            <div class="flex justify-between items-center text-lg text-green-600">
-                <span>Descuento (${promo.porcentaje}%):</span>
-                <span class="font-semibold">-$${discount.toLocaleString('es-CO')}</span>
-            </div>` : ''}
             <div class="flex justify-between items-center mt-2 pt-2 border-t">
                 <span class="text-xl font-bold">Total:</span>
                 <span class="text-2xl font-extrabold text-gray-900">$${total.toLocaleString('es-CO')}</span>
             </div>`;
-        promoElement.innerHTML = `
-            ${promo ? `
-            <div class="text-center text-green-600 font-bold mb-2">
-                Código "${promo.codigo}" aplicado!
-                <button id="remove-promo-btn" class="text-red-500 underline ml-2">(Quitar)</button>
-            </div>` : `
-            <div class="flex gap-2">
-                <input type="text" id="promo-code-input" placeholder="Código de promo" class="w-full text-lg p-2 border border-gray-300 rounded-lg">
-                <button id="apply-promo-btn" class="bg-gray-800 text-white font-bold py-2 px-4 rounded-lg">Aplicar</button>
-            </div>
-            <p id="promo-error" class="text-red-500 text-sm mt-1 h-4"></p>`
-            }
-        `;
+        const promoElement = cartFooter.querySelector('#cart-promo-section');
+        if (promoElement) promoElement.remove();
         localStorage.setItem('cart', JSON.stringify(state.cart));
     };
     
-    const applyPromo = () => {
-        const input = document.getElementById('promo-code-input');
-        const errorP = document.getElementById('promo-error');
-        const code = input.value.trim().toUpperCase();
-        if (!code) return;
-        const promo = DATA.promos.find(p => p.codigo === code);
-        const now = new Date();
-        if (promo && promo.activo && new Date(promo.fecha_inicio) <= now && new Date(promo.fecha_fin) >= now) {
-            state.cart.appliedPromoCode = code;
-            renderCart();
-        } else {
-            errorP.textContent = "Código inválido o expirado.";
-            input.value = '';
-        }
-    };
-
-    const removePromo = () => {
-        state.cart.appliedPromoCode = null;
-        renderCart();
-    };
 
     const handleCheckout = async () => {
         if (!state.currentUser) { alert("Por favor, inicia sesión para continuar."); toggleCart(false); showPage('login-page'); return; }
         let message = `¡Hola! 👋 Quisiera hacer el siguiente pedido:\n\n`;
-        const { items, appliedPromoCode } = state.cart;
+        const { items } = state.cart;
         items.forEach(item => {
             const atributosDesc = item.atributos.map(a => `${a.nombre}: ${a.valor}`).join('\n  - ');
             message += `*Producto:* ${item.name}\n  - ${atributosDesc}\n  - Cantidad: ${item.quantity}\n  - Precio Base: $${(item.priceBase * item.quantity).toLocaleString('es-CO')}\n\n`;
         });
         const subtotal = items.reduce((sum, item) => sum + item.priceBase * item.quantity, 0);
-        let discount = 0;
-        let promo = null;
-        if (appliedPromoCode) {
-            promo = DATA.promos.find(p => p.codigo === appliedPromoCode);
-            if (promo) discount = subtotal * (promo.porcentaje / 100);
-        }
-        const total = subtotal - discount;
+        const total = subtotal;
         message += `*Subtotal:* $${subtotal.toLocaleString('es-CO')}\n`;
-        if (promo) {
-            message += `*Descuento (${promo.porcentaje}%):* -$${discount.toLocaleString('es-CO')}\n`;
-        }
         message += `*TOTAL DEL PEDIDO: $${total.toLocaleString('es-CO')}*\n\n`;
         message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Ciudad: ${state.currentUser.city}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
         const response = await fetch('/catalogo/api/pedido/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ 
-                cliente: state.currentUser, 
-                promoCode: appliedPromoCode 
+            body: JSON.stringify({
+                cliente: state.currentUser
             })
         });
         if (!response.ok) {
@@ -568,18 +515,10 @@ document.addEventListener('DOMContentLoaded', () => {
             changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), -Infinity);
         }
     });
-    cartFooter.addEventListener('click', e => {
-        if (e.target.id === 'apply-promo-btn') applyPromo();
-        if (e.target.id === 'remove-promo-btn') removePromo();
-    });
 
     const init = () => {
         const totalContainer = document.getElementById('cart-total')?.parentElement;
         if(totalContainer) totalContainer.id = 'cart-totals-summary';
-        const promoContainer = document.createElement('div');
-        promoContainer.id = 'cart-promo-section';
-        promoContainer.className = 'my-4';
-        cartFooter.insertBefore(promoContainer, checkoutBtn);
         const storedUser = localStorage.getItem('currentUser');
         const storedCart = localStorage.getItem('cart');
         if (storedUser) {
