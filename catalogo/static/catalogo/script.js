@@ -177,7 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showConfirmationToast();
     };
 
+
 const renderCart = () => {
+
         const { items } = state.cart;
         const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
         cartCount.textContent = totalItems;
@@ -210,6 +212,7 @@ const renderCart = () => {
             checkoutBtn.disabled = false;
         }
         const subtotal = items.reduce((sum, item) => sum + item.priceBase * item.quantity, 0);
+
         let discount = 0;
         let promo = null;
         /* Promo code feature disabled for now
@@ -219,22 +222,19 @@ const renderCart = () => {
         }
         */
         const total = subtotal - discount;
+
         const totalsElement = cartFooter.querySelector('#cart-totals-summary');
         totalsElement.innerHTML = `
             <div class="flex justify-between items-center text-lg">
                 <span>Subtotal:</span>
                 <span class="font-semibold">$${subtotal.toLocaleString('es-CO')}</span>
             </div>
-            ${promo ? `
-            <div class="flex justify-between items-center text-lg text-green-600">
-                <span>Descuento (${promo.porcentaje}%):</span>
-                <span class="font-semibold">-$${discount.toLocaleString('es-CO')}</span>
-            </div>` : ''}
             <div class="flex justify-between items-center mt-2 pt-2 border-t">
                 <span class="text-xl font-bold">Total:</span>
                 <span class="text-2xl font-extrabold text-gray-900">$${total.toLocaleString('es-CO')}</span>
             </div>`;
         const promoElement = cartFooter.querySelector('#cart-promo-section');
+
         /* Promo code UI disabled
         promoElement.innerHTML = `
             ${promo ? `
@@ -276,6 +276,7 @@ const renderCart = () => {
         renderCart();
     };
     */
+
     
 
     const handleCheckout = async () => {
@@ -287,6 +288,7 @@ const renderCart = () => {
             message += `*Producto:* ${item.name}\n  - ${atributosDesc}\n  - Cantidad: ${item.quantity}\n  - Precio Base: $${(item.priceBase * item.quantity).toLocaleString('es-CO')}\n\n`;
         });
         const subtotal = items.reduce((sum, item) => sum + item.priceBase * item.quantity, 0);
+
         let discount = 0;
         let promo = null;
         /* Promo code feature disabled for now
@@ -300,14 +302,17 @@ const renderCart = () => {
         /* if (promo) {
             message += `*Descuento (${promo.porcentaje}%):* -$${discount.toLocaleString('es-CO')}\n`;
         }*/
+
         message += `*TOTAL DEL PEDIDO: $${total.toLocaleString('es-CO')}*\n\n`;
         message += `*Datos de Envío:*\n- Nombre: ${state.currentUser.name}\n- Dirección: ${state.currentUser.address}\n- Ciudad: ${state.currentUser.city}\n- Teléfono: ${state.currentUser.phone}\n\n¡Gracias!`;
         const response = await fetch('/catalogo/api/pedido/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
             body: JSON.stringify({
+
                 cliente: state.currentUser,
                 // promoCode: appliedPromoCode
+
             })
         });
         if (!response.ok) {
@@ -578,6 +583,7 @@ const renderCart = () => {
             changeQuantity(Number(e.target.closest('[data-variation-id]').dataset.variationId), -Infinity);
         }
     });
+
     /* Promo code actions disabled
     cartFooter.addEventListener('click', e => {
         if (e.target.id === 'apply-promo-btn') applyPromo();
@@ -585,15 +591,18 @@ const renderCart = () => {
     });
     */
 
+
     const init = () => {
         const totalContainer = document.getElementById('cart-total')?.parentElement;
         if(totalContainer) totalContainer.id = 'cart-totals-summary';
+
         /* Promo code UI container disabled
         const promoContainer = document.createElement('div');
         promoContainer.id = 'cart-promo-section';
         promoContainer.className = 'my-4';
         cartFooter.insertBefore(promoContainer, checkoutBtn);
         */
+
         const storedUser = localStorage.getItem('currentUser');
         const storedCart = localStorage.getItem('cart');
         if (storedUser) {
