@@ -347,7 +347,9 @@ const renderCart = () => {
                 state.cart = { items: [], appliedPromoCode: null };
             }
             renderCart();
-            navigateTo("tiposProducto");
+            restoreNavigationFromUrl();
+            renderCurrentView();
+            updateHistory(true);
         };
         if (registrationFields.classList.contains("hidden")) {
             const res = await fetch(`/catalogo/api/cliente/detail/?phone=${phone}`);
@@ -429,14 +431,54 @@ const renderCart = () => {
         window.scrollTo(0, 0);
     };
 
+    const updateHistory = (replace = false) => {
+        if (state.navigationStack.length === 0) return;
+        const { view, contextId } = state.navigationStack[state.navigationStack.length - 1];
+        const params = new URLSearchParams();
+        if (view === 'categorias') {
+            params.set('view', 'categorias');
+            params.set('tipo', contextId);
+        } else if (view === 'productos') {
+            params.set('view', 'productos');
+            params.set('cat', contextId);
+        }
+        const url = params.toString() ? `?${params.toString()}` : location.pathname;
+        if (replace) history.replaceState(null, '', url); else history.pushState(null, '', url);
+    };
+
+    const restoreNavigationFromUrl = () => {
+        const params = new URLSearchParams(location.search);
+        const view = params.get('view');
+        state.navigationStack = [];
+        if (view === 'productos' && params.get('cat')) {
+            const catId = Number(params.get('cat'));
+            const cat = DATA.categorias.find(c => c.id === catId);
+            if (cat) {
+                state.navigationStack.push({ view: 'tiposProducto', contextId: null });
+                state.navigationStack.push({ view: 'categorias', contextId: cat.tipoProductoId });
+                state.navigationStack.push({ view: 'productos', contextId: catId });
+                return;
+            }
+        }
+        if (view === 'categorias' && params.get('tipo')) {
+            const tipoId = Number(params.get('tipo'));
+            state.navigationStack.push({ view: 'tiposProducto', contextId: null });
+            state.navigationStack.push({ view: 'categorias', contextId: tipoId });
+            return;
+        }
+        state.navigationStack.push({ view: 'tiposProducto', contextId: null });
+    };
+
     const navigateTo = (view, contextId = null) => {
         state.navigationStack.push({ view, contextId });
+        updateHistory();
         renderCurrentView();
     };
 
     const navigateBack = () => {
         if (state.navigationStack.length > 1) {
             state.navigationStack.pop();
+            updateHistory();
             renderCurrentView();
         }
     };
@@ -444,6 +486,7 @@ const renderCart = () => {
     const navigateToView = (index) => {
         if (index < 0 || index >= state.navigationStack.length) return;
         state.navigationStack = state.navigationStack.slice(0, index + 1);
+        updateHistory();
         renderCurrentView();
     };
 
@@ -526,7 +569,7 @@ const renderCart = () => {
             // --- LÍNEA MODIFICADA ---
             // Cambiamos p.categoriaId === categoriaId por p.categoriaIds.includes(categoriaId)
             .filter(p => p.categoriaIds.includes(categoriaId))
-            .map(prod => `<div class="product-card cursor-pointer" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.referencia}" class="w-full h-48 object-cover"><div class="p-3"><h4 class="font-bold text-center">${prod.referencia}</h4></div></div>`)
+            .map(prod => `<div class="product-card cursor-pointer" data-product-id="${prod.id}"><img src="${prod.foto_url}" alt="${prod.referencia}" class="w-full h-48 object-contain p-2 bg-white"><div class="p-3"><h4 class="font-bold text-center">${prod.referencia}</h4></div></div>`)
             .join('');
         showPage('products-page');
     };
@@ -551,6 +594,7 @@ const renderCart = () => {
             navigateToView(index);
         }
     });
+    window.addEventListener('popstate', () => { restoreNavigationFromUrl(); renderCurrentView(); });
     modalOverlay.addEventListener('click', closeModal);
     modalQuantityPlus.addEventListener('click', () => { state.modalSelection.quantity++; updateModalUI(); });
     modalQuantityMinus.addEventListener('click', () => { if (state.modalSelection.quantity > 1) { state.modalSelection.quantity--; updateModalUI(); } });
@@ -620,7 +664,9 @@ const renderCart = () => {
                 .then(res => res.ok ? res.json() : Promise.reject())
                 .then(data => { state.cart = data; renderCart(); })
                 .catch(() => { renderCart(); });
-            navigateTo('tiposProducto');
+            restoreNavigationFromUrl();
+            renderCurrentView();
+            updateHistory(true);
         } else {
             showPage('login-page');
             renderCart();
