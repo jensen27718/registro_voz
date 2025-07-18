@@ -1,27 +1,18 @@
 import os
 import json
-import gspread
 import google.generativeai as genai
 from datetime import datetime, timedelta
 from difflib import get_close_matches
 
-from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db.models import Sum
 
-from google.oauth2.service_account import Credentials
-from gspread.exceptions import SpreadsheetNotFound
-from googleapiclient.discovery import build
 
 from .models import Categoria, Cuenta, Cliente, Registro
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
 
 try:
     from registro_voz import secrets
@@ -36,50 +27,7 @@ else:
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-CREDS_FILE = os.path.join(settings.BASE_DIR, 'credentials.json')
-creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
-client = gspread.authorize(creds)
-CONTABILIDAD_FOLDER_NAME = "Contabilidad App (Compartida)"
-SHEET_NAME = "Registros Contables"
 HEADERS = ["fecha", "categoria", "cuenta", "descripcion", "egresos", "ingresos"]
-
-
-def get_or_create_worksheet():
-    try:
-        drive_service = build('drive', 'v3', credentials=creds)
-        folders_response = drive_service.files().list(
-            q=f'mimeType="application/vnd.google-apps.folder" and name="{CONTABILIDAD_FOLDER_NAME}" and trashed=false',
-            spaces='drive',
-            fields='files(id, name)'
-        ).execute()
-        folders = folders_response.get('files', [])
-
-        if folders:
-            folder_id = folders[0]['id']
-        else:
-            folder_metadata = {
-                'name': CONTABILIDAD_FOLDER_NAME,
-                'mimeType': 'application/vnd.google-apps.folder'
-            }
-            folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
-            folder_id = folder.get('id')
-            user_permission = {
-                'type': 'user',
-                'role': 'writer',
-                'emailAddress': 'artperezjensen@gmail.com'
-            }
-            drive_service.permissions().create(fileId=folder_id, body=user_permission, fields='id').execute()
-
-        try:
-            spreadsheet = client.open(SHEET_NAME, folder_id=folder_id)
-            return spreadsheet.sheet1
-        except SpreadsheetNotFound:
-            spreadsheet = client.create(SHEET_NAME, folder_id=folder_id)
-            worksheet = spreadsheet.sheet1
-            worksheet.append_row(HEADERS)
-            return worksheet
-    except Exception:
-        return None
 
 
 def home(request):
@@ -180,13 +128,6 @@ def registrar_datos(request):
         datos_finales = data.get('datos')
         if not datos_finales:
             return JsonResponse({'error': 'No se recibieron datos'}, status=400)
-
-        worksheet = get_or_create_worksheet()
-        if worksheet is None:
-            return JsonResponse({'error': 'No se pudo acceder a la hoja de cálculo.'}, status=500)
-
-        fila = [datos_finales.get(h, '') for h in HEADERS]
-        worksheet.append_row(fila)
 
         cliente_obj = None
         nombre_cliente = datos_finales.get('cliente')
