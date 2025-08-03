@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Movimientos de {{ cuenta.nombre }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4">
+  <header class="text-center mb-6">
+    <h1 class="text-2xl font-bold text-white">Movimientos de {{ cuenta.nombre }}</h1>
+    <a href="{% url 'interfaz:dashboard' %}" class="text-cyan-400 hover:text-cyan-300">← Volver al dashboard</a>
+  </header>
+  <div class="bg-slate-800 rounded-lg overflow-hidden shadow-xl">
+    <table class="w-full text-sm">
+      <thead class="text-slate-400">
+        <tr>
+          <th class="px-4 py-2">Fecha</th>
+          <th class="px-4 py-2">Descripción</th>
+          <th class="px-4 py-2">Categoría</th>
+          <th class="px-4 py-2">Ingresos</th>
+          <th class="px-4 py-2">Egresos</th>
+          <th class="px-4 py-2">Cliente</th>
+          <th class="px-4 py-2">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-700">
+        {% for r in registros %}
+        <tr>
+          <td class="px-4 py-2">{{ r.fecha|date:'Y-m-d' }}</td>
+          <td class="px-4 py-2">{{ r.descripcion }}</td>
+          <td class="px-4 py-2">{{ r.categoria.nombre|default:'--' }}</td>
+          <td class="px-4 py-2">{{ r.ingresos|moneda }}</td>
+          <td class="px-4 py-2">{{ r.egresos|moneda }}</td>
+          <td class="px-4 py-2">{{ r.cliente.nombre|default:'--' }}</td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <a href="{% url 'interfaz:editar_registro' r.id %}?next={% url 'interfaz:movimientos_cuenta' cuenta.id %}" class="text-yellow-400 mr-2">Editar</a>
+            <button onclick="eliminarRegistro({{ r.id }})" class="text-red-500">Eliminar</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center py-4 text-slate-500">Sin registros</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form id="delete-form" method="post" class="hidden">{% csrf_token %}</form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function eliminarRegistro(id){
+  if(!confirm('¿Eliminar el registro?')) return;
+  const form = document.getElementById('delete-form');
+  await fetch(`{% url 'interfaz:eliminar_registro' 0 %}`.replace('0', id), {
+    method: 'POST',
+    headers: {'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]').value}
+  });
+  window.location.reload();
+}
+</script>
+{% endblock %}

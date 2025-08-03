@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db.models import Sum
+from django.urls import reverse
 
 
 from .models import Categoria, Cuenta, Cliente, Registro
@@ -206,8 +207,19 @@ def dashboard(request):
     return render(request, 'interfaz/dashboard.html', context)
 
 
+def movimientos_cuenta(request, cuenta_id):
+    cuenta = get_object_or_404(Cuenta, id=cuenta_id)
+    registros = Registro.objects.filter(cuenta=cuenta).order_by('-fecha', '-id')
+    context = {
+        'cuenta': cuenta,
+        'registros': registros,
+    }
+    return render(request, 'interfaz/movimientos_cuenta.html', context)
+
+
 def editar_registro(request, registro_id):
     registro = get_object_or_404(Registro, id=registro_id)
+    return_url = request.POST.get('next') or request.GET.get('next') or reverse('interfaz:dashboard')
     if request.method == 'POST':
         registro.fecha = request.POST.get('fecha', registro.fecha)
         registro.descripcion = request.POST.get('descripcion', '')
@@ -221,12 +233,13 @@ def editar_registro(request, registro_id):
         else:
             registro.cliente = None
         registro.save()
-        return redirect('interfaz:dashboard')
+        return redirect(return_url)
 
     context = {
         'registro': registro,
         'categorias': Categoria.objects.all(),
         'cuentas': Cuenta.objects.all(),
+        'return_url': return_url,
     }
     return render(request, 'interfaz/editar_registro.html', context)
 
