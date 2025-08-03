@@ -181,10 +181,11 @@ def dashboard(request):
     cuentas_data = []
     for cuenta in Cuenta.objects.all():
         qs_cuenta = Registro.objects.filter(cuenta=cuenta)
+        totales_cuenta = _totales_desde(qs_cuenta)
         cuentas_data.append(
             {
                 'cuenta': cuenta,
-                'saldo_actual': _totales_desde(qs_cuenta)['saldo'],
+                'saldo_actual': totales_cuenta['saldo'],
                 'totales_semana': _totales_desde(
                     qs_cuenta.filter(
                         fecha__range=[inicio_semana, inicio_semana + timedelta(days=6)]
