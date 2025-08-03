@@ -34,8 +34,11 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
     {% for c in cuentas_data %}
     <div class="bg-slate-800 rounded-lg p-4 space-y-2">
-      <h3 class="text-center font-bold text-cyan-400">{{ c.cuenta.nombre }}</h3>
-        <p class="text-center font-semibold">Saldo actual: {{ c.saldo_actual|moneda }}</p>
+      <h3 class="text-center font-bold">
+        <a href="{% url 'interfaz:movimientos_cuenta' c.cuenta.id %}"
+           class="text-cyan-400 hover:underline">{{ c.cuenta.nombre }}</a>
+      </h3>
+      <p class="text-center font-semibold">Saldo actual: {{ c.saldo_actual|moneda }}</p>
       <div class="grid grid-cols-3 gap-2 text-sm">
         <div>
           <h4 class="text-center text-slate-400 font-semibold mb-1">Semana</h4>
