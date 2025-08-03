@@ -151,8 +151,10 @@ def registrar_datos(request):
 
 
 def _totales_desde(qs):
-    ingresos = qs.aggregate(total=Sum('ingresos'))['total'] or 0
-    egresos = qs.aggregate(total=Sum('egresos'))['total'] or 0
+    """Return total incomes, expenses and balance for a queryset."""
+    totales = qs.aggregate(ing=Sum('ingresos'), egr=Sum('egresos'))
+    ingresos = totales['ing'] or 0
+    egresos = totales['egr'] or 0
     return {
         'ingresos': ingresos,
         'egresos': egresos,
