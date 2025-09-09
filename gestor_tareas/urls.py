@@ -11,7 +11,8 @@ urlpatterns = [
     path('registrar/', views.registrar_tarea, name='registrar_tarea'),
     path('crear/tipo/', views.crear_tipo_trabajo, name='crear_tipo'),
     path('actualizar-estado/', views.actualizar_estado_tarea, name='actualizar_estado'),
-    
+    path('reordenar/', views.reordenar_tareas, name='reordenar_tareas'),
+
     # <-- NUEVAS RUTAS -->
     path('editar/<int:tarea_id>/', views.editar_tarea, name='editar_tarea'),
     path('ocultar/<int:tarea_id>/', views.ocultar_tarea, name='ocultar_tarea'),

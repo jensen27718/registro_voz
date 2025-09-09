@@ -18,8 +18,8 @@
           <th class="px-4 py-2">Fecha</th>
           <th class="px-4 py-2">Descripción</th>
           <th class="px-4 py-2">Categoría</th>
-          <th class="px-4 py-2">Ingresos</th>
-          <th class="px-4 py-2">Egresos</th>
+          <th class="px-4 py-2 text-blue-400">Ingresos</th>
+          <th class="px-4 py-2 text-red-400">Egresos</th>
           <th class="px-4 py-2">Cliente</th>
           <th class="px-4 py-2">Acciones</th>
         </tr>
@@ -30,8 +30,8 @@
           <td class="px-4 py-2">{{ r.fecha|date:'Y-m-d' }}</td>
           <td class="px-4 py-2">{{ r.descripcion }}</td>
           <td class="px-4 py-2">{{ r.categoria.nombre|default:'--' }}</td>
-          <td class="px-4 py-2">{{ r.ingresos|moneda }}</td>
-          <td class="px-4 py-2">{{ r.egresos|moneda }}</td>
+          <td class="px-4 py-2 text-blue-400">{{ r.ingresos|moneda }}</td>
+          <td class="px-4 py-2 text-red-400">{{ r.egresos|moneda }}</td>
           <td class="px-4 py-2">{{ r.cliente.nombre|default:'--' }}</td>
           <td class="px-4 py-2 whitespace-nowrap">
             <a href="{% url 'interfaz:editar_registro' r.id %}?next={% url 'interfaz:movimientos_cuenta' cuenta.id %}" class="text-yellow-400 mr-2">Editar</a>

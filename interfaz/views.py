@@ -32,7 +32,14 @@ HEADERS = ["fecha", "categoria", "cuenta", "descripcion", "egresos", "ingresos"]
 
 
 def home(request):
-    return render(request, 'interfaz/voz.html')
+    return render(
+        request,
+        'interfaz/voz.html',
+        {
+            'categorias': list(Categoria.objects.values_list('nombre', flat=True)),
+            'cuentas': list(Cuenta.objects.values_list('nombre', flat=True)),
+        },
+    )
 
 
 @csrf_exempt
@@ -198,14 +205,15 @@ def dashboard(request):
             }
         )
 
+    saldo_total_general = sum(c['saldo_actual'] for c in cuentas_data)
+
     context = {
         'totales_semana': totales_semana,
         'totales_mes': totales_mes,
         'totales_anio': totales_anio,
         'registros_recientes': recientes,
-
         'cuentas_data': cuentas_data,
-
+        'saldo_total_general': saldo_total_general,
     }
     return render(request, 'interfaz/dashboard.html', context)
 

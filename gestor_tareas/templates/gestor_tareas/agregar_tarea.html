@@ -19,6 +19,7 @@
             <button id="talkButton" class="mx-auto flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-cyan-600 hover:bg-cyan-700 transition-all focus:outline-none focus:ring-4 focus:ring-cyan-500">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-10 h-10"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" /><path fill-rule="evenodd" d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-4a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z" clip-rule="evenodd" /></svg>
             </button>
+            <button id="manualButton" class="mt-4 w-full bg-slate-700 hover:bg-slate-600 rounded-lg py-2 hidden">Ingresar manualmente</button>
 
             <!-- El formulario se inyectará aquí con JavaScript -->
             <form id="formContainer" class="hidden mt-8 space-y-4 text-sm"></form>
@@ -38,14 +39,20 @@
     const instructionText = document.getElementById('instructionText');
     const statusBox = document.getElementById('statusBox');
     const transcriptionBox = document.getElementById('transcriptionBox');
+    const manualButton = document.getElementById('manualButton');
     let isRecording = false;
     let tomSelectTipo;
+
+    const TIPOS_INICIALES = {{ tipos|safe }};
+    const PRIORIDADES_INICIALES = {{ prioridades|safe }};
+    const ESTADOS_INICIALES = {{ estados|safe }};
 
     // --- Lógica de la API de Voz (a prueba de fallos) ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       statusBox.textContent = 'Tu navegador no soporta la API de voz.';
       talkButton.disabled = true;
+      manualButton.classList.remove('hidden');
     } else {
       const recognition = new SpeechRecognition();
       recognition.lang = 'es-ES';
@@ -89,8 +96,8 @@
         transcriptionBox.innerHTML = `<i>${finalTranscript}</i><i class="text-slate-500">${interimTranscript}</i>`;
       };
       
-      recognition.onerror = (event) => { statusBox.textContent = `Error: ${event.error}`; };
-      
+      recognition.onerror = (event) => { statusBox.textContent = `Error: ${event.error}`; manualButton.classList.remove('hidden'); };
+
       talkButton.addEventListener('click', () => {
         if (isRecording) {
           recognition.stop();
@@ -100,8 +107,22 @@
             recognition.start();
           } catch(e) {
             statusBox.textContent = 'Error al iniciar micrófono. Intenta de nuevo.';
+            manualButton.classList.remove('hidden');
           }
         }
+      });
+    }
+
+    manualButton.addEventListener('click', () => {
+      mostrarFormularioManual();
+    });
+
+    function mostrarFormularioManual(){
+      populateAndShowForm({
+        datos_extraidos: {},
+        todos_los_tipos: TIPOS_INICIALES,
+        todas_las_prioridades: PRIORIDADES_INICIALES,
+        todos_los_estados: ESTADOS_INICIALES,
       });
     }
 
