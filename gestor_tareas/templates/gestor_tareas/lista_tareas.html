@@ -3,7 +3,8 @@
 {% block title %}Lista de Tareas{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-4">
+    <div class="flex-1">
     <header class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-3xl font-bold text-white text-center sm:text-left">
             Gestor de <span class="text-cyan-400">Tareas</span>
@@ -16,12 +17,12 @@
         </a>
     </header>
 
-    <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
+        <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
 
-    <div class="bg-slate-800 rounded-lg shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left table-auto">
-                <thead class="text-xs text-slate-400 uppercase">
+        <div class="bg-slate-800 rounded-lg shadow-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left table-auto">
+                    <thead class="text-xs text-slate-400 uppercase">
                     <tr>
                         <th class="px-4 py-3">Orden</th>
                         <th class="px-4 py-3">Recibido</th>
@@ -33,9 +34,9 @@
                         <th class="px-4 py-3">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-700">
-                    {% for tarea in tareas %}
-                    <tr id="tarea-row-{{ tarea.id }}" class="hover:bg-slate-700/50 transition-colors duration-200 {% if tarea.estado == 'Completado' %}completed-row{% endif %}">
+                    <tbody id="tareas-body" class="divide-y divide-slate-700">
+                        {% for tarea in tareas %}
+                        <tr id="tarea-row-{{ tarea.id }}" draggable="true" class="hover:bg-slate-700/50 transition-colors duration-200 {% if tarea.estado == 'Recibido' %}bg-blue-900/20{% elif tarea.estado == 'En Proceso' %}bg-yellow-900/20{% elif tarea.estado == 'Completado' %}bg-green-900/20 completed-row{% endif %}">
 
                         <td class="px-4 py-3 text-xl font-bold text-white">{{ tarea.orden|default:0 }}</td>
 
@@ -84,15 +85,24 @@
                         </td>
 
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center py-10 text-slate-500">No hay tareas visibles. ¡Agrega la primera!</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-10 text-slate-500">No hay tareas visibles. ¡Agrega la primera!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+    <aside class="w-64 bg-slate-800 rounded-lg p-4 text-sm">
+        <h2 class="text-center font-bold mb-2">Notas</h2>
+        <form id="noteForm" class="flex gap-2">
+            <input id="noteInput" type="text" class="flex-grow bg-slate-700 p-1 rounded" placeholder="Nueva nota...">
+            <button type="submit" class="bg-green-600 px-2 rounded">+</button>
+        </form>
+        <ul id="notesList" class="mt-4 space-y-2"></ul>
+    </aside>
 </div>
 {% endblock %}
 
@@ -182,5 +192,88 @@
             fullEl.classList.toggle('hidden');
         }
     }
+
+    // --- Drag and drop para reordenar tareas ---
+    const tbody = document.getElementById('tareas-body');
+    let draggedRow = null;
+    tbody.addEventListener('dragstart', (e) => {
+        draggedRow = e.target.closest('tr');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    tbody.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const target = e.target.closest('tr');
+        if (!target || target === draggedRow) return;
+        const rect = target.getBoundingClientRect();
+        const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+        tbody.insertBefore(draggedRow, next ? target.nextSibling : target);
+    });
+    tbody.addEventListener('drop', (e) => {
+        e.preventDefault();
+        actualizarOrdenesServidor();
+    });
+
+    async function actualizarOrdenesServidor(){
+        const rows = [...tbody.querySelectorAll('tr')];
+        const ordenes = [];
+        rows.forEach((row, idx) => {
+            row.querySelector('td').textContent = idx + 1;
+            const id = row.id.split('-')[2];
+            ordenes.push({id: id, orden: idx + 1});
+        });
+        await fetch("{% url 'gestor_tareas:reordenar_tareas' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ ordenes })
+        });
+    }
+
+    // --- Sidebar de notas ---
+    const notesList = document.getElementById('notesList');
+    const noteForm = document.getElementById('noteForm');
+    const noteInput = document.getElementById('noteInput');
+
+    function loadNotes(){
+        const notes = JSON.parse(localStorage.getItem('tareasNotas') || '[]');
+        notesList.innerHTML = '';
+        notes.forEach((note, idx) => {
+            const li = document.createElement('li');
+            li.className = 'relative bg-slate-700 p-2 rounded';
+            const span = document.createElement('span');
+            span.textContent = note;
+            span.addEventListener('dblclick', () => {
+                const nuevo = prompt('Editar nota', note);
+                if(nuevo !== null){
+                    notes[idx] = nuevo;
+                    localStorage.setItem('tareasNotas', JSON.stringify(notes));
+                    loadNotes();
+                }
+            });
+            const btn = document.createElement('button');
+            btn.textContent = 'x';
+            btn.className = 'absolute top-1 right-1 text-red-400';
+            btn.addEventListener('click', () => {
+                notes.splice(idx,1);
+                localStorage.setItem('tareasNotas', JSON.stringify(notes));
+                loadNotes();
+            });
+            li.appendChild(span);
+            li.appendChild(btn);
+            notesList.appendChild(li);
+        });
+    }
+
+    noteForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = noteInput.value.trim();
+        if(!text) return;
+        const notes = JSON.parse(localStorage.getItem('tareasNotas') || '[]');
+        notes.push(text);
+        localStorage.setItem('tareasNotas', JSON.stringify(notes));
+        noteInput.value = '';
+        loadNotes();
+    });
+
+    loadNotes();
 </script>
 {% endblock %}

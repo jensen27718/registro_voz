@@ -47,7 +47,15 @@ def agregar_tarea_voz(request):
     """
     Renderiza la página que contiene el micrófono para agregar una nueva tarea por voz.
     """
-    return render(request, 'gestor_tareas/agregar_tarea.html')
+    return render(
+        request,
+        'gestor_tareas/agregar_tarea.html',
+        {
+            'tipos': list(TipoTrabajo.objects.values_list('nombre', flat=True)),
+            'prioridades': [p[0] for p in Tarea.Prioridad.choices],
+            'estados': [e[0] for e in Tarea.Estado.choices],
+        },
+    )
 
 def editar_tarea(request, tarea_id):
     """
@@ -200,6 +208,20 @@ def actualizar_estado_tarea(request):
         })
     except Tarea.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'La tarea no existe.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def reordenar_tareas(request):
+    """Actualiza el orden de múltiples tareas."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+    try:
+        data = json.loads(request.body)
+        ordenes = data.get('ordenes', [])
+        for item in ordenes:
+            Tarea.objects.filter(id=item.get('id')).update(orden=item.get('orden'))
+        return JsonResponse({'status': 'success'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
