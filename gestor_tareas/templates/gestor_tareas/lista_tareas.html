@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
     <form id="filtersForm" method="get" class="w-full">
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
             <div class="flex flex-col gap-1 w-full sm:w-auto">
@@ -39,10 +40,13 @@
         </div>
     </form>
 
+
     <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
+
         <div class="overflow-x-auto pr-6">
+
             <table class="w-full text-sm text-left table-auto">
                 <thead class="text-xs text-gray-500 uppercase bg-gray-50">
                 <tr>
@@ -54,13 +58,17 @@
                     <th class="px-4 py-3">Estado</th>
                     <th class="px-4 py-3">Prioridad</th>
                     <th class="px-4 py-3 text-right">Acciones</th>
+
                     <th class="px-4 py-3">Mover</th>
+
                 </tr>
                 </thead>
                 <tbody id="tareas-body" class="divide-y divide-[#E5E7EB]">
                     {% for tarea in tareas %}
+
                     <tr id="tarea-row-{{ tarea.id }}" class="hover:bg-gray-50 transition-colors" draggable="true" data-id="{{ tarea.id }}">
                         <td class="px-4 py-3 text-lg font-semibold orden-cell">{{ tarea.orden|default:0 }}</td>
+
                         <td class="px-4 py-3">{{ tarea.dias_desde_recibido }}</td>
                         <td class="px-4 py-3">
                             {{ tarea.cliente }}{% if tarea.telefono %} · <a href="https://wa.me/{{ tarea.telefono|cut:' '|cut:'-' }}" target="_blank" class="text-teal-600 hover:underline">{{ tarea.telefono }}</a>{% endif %}
@@ -102,11 +110,13 @@
                             <a href="{% url 'gestor_tareas:editar_tarea' tarea.id %}" class="text-teal-600 hover:underline mr-3">Editar</a>
                             <button onclick="ocultarTarea({{ tarea.id }})" class="text-red-600 hover:underline">Archivar</button>
                         </td>
+
                         <td class="px-4 py-3 text-gray-400 cursor-move text-center">☰</td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="9" class="text-center py-10 text-gray-500">No hay tareas visibles. ¡Agrega la primera!</td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
