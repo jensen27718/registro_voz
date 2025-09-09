@@ -6,74 +6,73 @@
 {% block content %}
 <div class="max-w-5xl mx-auto px-4">
   <header class="text-center mb-8">
-    <h1 class="text-3xl font-bold text-white">Resumen de <span class="text-green-400">Contabilidad</span></h1>
-    <p class="text-2xl mt-2">Saldo total: <span class="text-green-400">{{ saldo_total_general|moneda }}</span></p>
+    <h1 class="text-3xl font-bold text-[#0F172A]">Resumen de <span class="text-teal-600">Contabilidad</span></h1>
+    <p class="text-2xl mt-2 text-[#0F172A]">Saldo total: <span class="text-green-600">{{ saldo_total_general|moneda }}</span></p>
   </header>
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-    <div class="bg-slate-800 rounded-lg p-4">
-      <h2 class="text-center font-semibold text-slate-400 mb-2">Semana</h2>
-        <p class="text-blue-400">Ingresos: {{ totales_semana.ingresos|moneda }}</p>
-        <p class="text-red-400">Egresos: {{ totales_semana.egresos|moneda }}</p>
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h2 class="text-center font-semibold text-gray-500 mb-2">Semana</h2>
+        <p class="text-blue-600">Ingresos: {{ totales_semana.ingresos|moneda }}</p>
+        <p class="text-red-600">Egresos: {{ totales_semana.egresos|moneda }}</p>
         <p class="font-bold">Saldo: {{ totales_semana.saldo|moneda }}</p>
     </div>
-    <div class="bg-slate-800 rounded-lg p-4">
-      <h2 class="text-center font-semibold text-slate-400 mb-2">Mes</h2>
-        <p class="text-blue-400">Ingresos: {{ totales_mes.ingresos|moneda }}</p>
-        <p class="text-red-400">Egresos: {{ totales_mes.egresos|moneda }}</p>
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h2 class="text-center font-semibold text-gray-500 mb-2">Mes</h2>
+        <p class="text-blue-600">Ingresos: {{ totales_mes.ingresos|moneda }}</p>
+        <p class="text-red-600">Egresos: {{ totales_mes.egresos|moneda }}</p>
         <p class="font-bold">Saldo: {{ totales_mes.saldo|moneda }}</p>
     </div>
-    <div class="bg-slate-800 rounded-lg p-4">
-      <h2 class="text-center font-semibold text-slate-400 mb-2">Año</h2>
-        <p class="text-blue-400">Ingresos: {{ totales_anio.ingresos|moneda }}</p>
-        <p class="text-red-400">Egresos: {{ totales_anio.egresos|moneda }}</p>
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h2 class="text-center font-semibold text-gray-500 mb-2">Año</h2>
+        <p class="text-blue-600">Ingresos: {{ totales_anio.ingresos|moneda }}</p>
+        <p class="text-red-600">Egresos: {{ totales_anio.egresos|moneda }}</p>
         <p class="font-bold">Saldo: {{ totales_anio.saldo|moneda }}</p>
     </div>
   </div>
 
-  <h2 class="text-xl font-semibold mb-4">Resumen por Cuenta</h2>
+  <h2 class="text-xl font-semibold mb-4 text-[#0F172A]">Resumen por Cuenta</h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
     {% for c in cuentas_data %}
-    <div class="bg-slate-800 rounded-lg p-4 space-y-2 text-center">
+    <div class="bg-white rounded-lg p-4 space-y-2 text-center shadow">
       <h3 class="font-bold">
-        <a href="{% url 'interfaz:movimientos_cuenta' c.cuenta.id %}"
-           class="text-cyan-400 hover:underline">{{ c.cuenta.nombre }}</a>
+        <a href="{% url 'interfaz:movimientos_cuenta' c.cuenta.id %}" class="text-teal-600 hover:underline">{{ c.cuenta.nombre }}</a>
       </h3>
-      <p class="text-2xl font-bold text-green-400">{{ c.saldo_actual|moneda }}</p>
-      <p class="text-xl text-blue-400">Ingreso mensual: {{ c.totales_mes.ingresos|moneda }}</p>
+      <p class="text-2xl font-bold text-green-600">{{ c.saldo_actual|moneda }}</p>
+      <p class="text-xl text-blue-600">Ingreso mensual: {{ c.totales_mes.ingresos|moneda }}</p>
     </div>
     {% empty %}
-    <p class="text-slate-500">Sin cuentas registradas.</p>
+    <p class="text-gray-500">Sin cuentas registradas.</p>
     {% endfor %}
   </div>
-  <h2 class="text-xl font-semibold mb-4">Últimos 10 registros</h2>
-  <div class="bg-slate-800 rounded-lg overflow-hidden shadow-xl">
+  <h2 class="text-xl font-semibold mb-4 text-[#0F172A]">Últimos 10 registros</h2>
+  <div class="bg-white rounded-lg overflow-hidden shadow">
     <table class="w-full text-sm">
-      <thead class="text-slate-400">
+      <thead class="text-gray-500">
         <tr>
           <th class="px-4 py-2">Fecha</th>
           <th class="px-4 py-2">Descripción</th>
-          <th class="px-4 py-2 text-blue-400">Ingresos</th>
-          <th class="px-4 py-2 text-red-400">Egresos</th>
+          <th class="px-4 py-2 text-blue-600">Ingresos</th>
+          <th class="px-4 py-2 text-red-600">Egresos</th>
           <th class="px-4 py-2">Cliente</th>
           <th class="px-4 py-2">Acciones</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-700">
+      <tbody class="divide-y divide-[#E5E7EB]">
         {% for r in registros_recientes %}
         <tr>
           <td class="px-4 py-2">{{ r.fecha|date:'Y-m-d' }}</td>
           <td class="px-4 py-2">{{ r.descripcion }}</td>
-            <td class="px-4 py-2 text-blue-400">{{ r.ingresos|moneda }}</td>
-            <td class="px-4 py-2 text-red-400">{{ r.egresos|moneda }}</td>
+            <td class="px-4 py-2 text-blue-600">{{ r.ingresos|moneda }}</td>
+            <td class="px-4 py-2 text-red-600">{{ r.egresos|moneda }}</td>
           <td class="px-4 py-2">{{ r.cliente.nombre|default:'--' }}</td>
           <td class="px-4 py-2 whitespace-nowrap">
-            <a href="{% url 'interfaz:editar_registro' r.id %}" class="text-yellow-400 mr-2">Editar</a>
-            <button onclick="eliminarRegistro({{ r.id }})" class="text-red-500">Eliminar</button>
+            <a href="{% url 'interfaz:editar_registro' r.id %}" class="text-teal-600 mr-2">Editar</a>
+            <button onclick="eliminarRegistro({{ r.id }})" class="text-red-600">Eliminar</button>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center py-4 text-slate-500">Sin registros</td></tr>
+        <tr><td colspan="6" class="text-center py-4 text-gray-500">Sin registros</td></tr>
         {% endfor %}
       </tbody>
     </table>
