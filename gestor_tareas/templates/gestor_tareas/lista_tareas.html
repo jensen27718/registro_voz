@@ -4,28 +4,49 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <div class="flex flex-col gap-1 w-full sm:w-auto">
-            <nav class="text-sm text-gray-500">Dashboard / <span class="text-gray-700">Tareas</span></nav>
-            <h1 class="text-2xl font-bold text-[#0F172A]">Gestor de <span class="text-teal-600">Tareas</span></h1>
-        </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-            <input id="searchInput" type="search" placeholder="Buscar..." class="flex-grow sm:flex-none border border-[#E5E7EB] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <button id="notesToggle" class="bg-gray-200 text-[#0F172A] px-4 py-2 rounded-md">Notas</button>
-            <a href="{% url 'gestor_tareas:agregar_tarea_voz' %}" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md">+ Nueva tarea</a>
-        </div>
-    </header>
 
-    <div class="flex flex-wrap gap-2 mb-4">
-        <span class="px-3 py-1 rounded-full bg-gray-200 text-sm">Estado</span>
-        <span class="px-3 py-1 rounded-full bg-gray-200 text-sm">Prioridad</span>
-        <span class="px-3 py-1 rounded-full bg-gray-200 text-sm">Tipo</span>
-    </div>
+    <form id="filtersForm" method="get" class="w-full">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+            <div class="flex flex-col gap-1 w-full sm:w-auto">
+                <nav class="text-sm text-gray-500">Dashboard / <span class="text-gray-700">Tareas</span></nav>
+                <h1 class="text-2xl font-bold text-[#0F172A]">Gestor de <span class="text-teal-600">Tareas</span></h1>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input name="q" id="searchInput" type="search" placeholder="Buscar..." value="{{ filtros.q }}" class="flex-grow sm:flex-none border border-[#E5E7EB] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <button type="button" id="notesToggle" class="bg-gray-200 text-[#0F172A] px-4 py-2 rounded-md">Notas</button>
+                <a href="{% url 'gestor_tareas:agregar_tarea_voz' %}" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-md">+ Nueva tarea</a>
+            </div>
+        </header>
+
+        <div class="flex flex-wrap gap-2 mb-4">
+            <select name="estado" onchange="this.form.submit()" class="px-3 py-1 rounded-full bg-gray-200 text-sm">
+                <option value="">Estado</option>
+                {% for value, label in estados_posibles %}
+                <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="prioridad" onchange="this.form.submit()" class="px-3 py-1 rounded-full bg-gray-200 text-sm">
+                <option value="">Prioridad</option>
+                {% for p in prioridades_posibles %}
+                <option value="{{ p }}" {% if filtros.prioridad == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+            <select name="tipo" onchange="this.form.submit()" class="px-3 py-1 rounded-full bg-gray-200 text-sm">
+                <option value="">Tipo</option>
+                {% for t in tipos_posibles %}
+                <option value="{{ t }}" {% if filtros.tipo == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
 
     <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="overflow-x-auto">
+
+        <div class="overflow-x-auto pr-6">
+
             <table class="w-full text-sm text-left table-auto">
                 <thead class="text-xs text-gray-500 uppercase bg-gray-50">
                 <tr>
@@ -37,12 +58,17 @@
                     <th class="px-4 py-3">Estado</th>
                     <th class="px-4 py-3">Prioridad</th>
                     <th class="px-4 py-3 text-right">Acciones</th>
+
+                    <th class="px-4 py-3">Mover</th>
+
                 </tr>
                 </thead>
                 <tbody id="tareas-body" class="divide-y divide-[#E5E7EB]">
                     {% for tarea in tareas %}
-                    <tr id="tarea-row-{{ tarea.id }}" draggable="true" class="hover:bg-gray-50 transition-colors">
-                        <td class="px-4 py-3 text-lg font-semibold">{{ tarea.orden|default:0 }}</td>
+
+                    <tr id="tarea-row-{{ tarea.id }}" class="hover:bg-gray-50 transition-colors" draggable="true" data-id="{{ tarea.id }}">
+                        <td class="px-4 py-3 text-lg font-semibold orden-cell">{{ tarea.orden|default:0 }}</td>
+
                         <td class="px-4 py-3">{{ tarea.dias_desde_recibido }}</td>
                         <td class="px-4 py-3">
                             {{ tarea.cliente }}{% if tarea.telefono %} · <a href="https://wa.me/{{ tarea.telefono|cut:' '|cut:'-' }}" target="_blank" class="text-teal-600 hover:underline">{{ tarea.telefono }}</a>{% endif %}
@@ -84,10 +110,13 @@
                             <a href="{% url 'gestor_tareas:editar_tarea' tarea.id %}" class="text-teal-600 hover:underline mr-3">Editar</a>
                             <button onclick="ocultarTarea({{ tarea.id }})" class="text-red-600 hover:underline">Archivar</button>
                         </td>
+
+                        <td class="px-4 py-3 text-gray-400 cursor-move text-center">☰</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-10 text-gray-500">No hay tareas visibles. ¡Agrega la primera!</td>
+                        <td colspan="9" class="text-center py-10 text-gray-500">No hay tareas visibles. ¡Agrega la primera!</td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -275,5 +304,46 @@
     });
 
     loadNotes();
+
+    // --- Drag and drop para reordenar ---
+    let dragged;
+    document.querySelectorAll('#tareas-body tr').forEach(row => {
+        row.addEventListener('dragstart', e => {
+            dragged = row;
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        row.addEventListener('dragover', e => {
+            e.preventDefault();
+            const target = e.currentTarget;
+            if (dragged === target) return;
+            const tbody = document.getElementById('tareas-body');
+            const bounds = target.getBoundingClientRect();
+            const offset = e.clientY - bounds.top;
+            const midpoint = bounds.height / 2;
+            if (offset > midpoint) {
+                tbody.insertBefore(dragged, target.nextSibling);
+            } else {
+                tbody.insertBefore(dragged, target);
+            }
+        });
+        row.addEventListener('drop', e => {
+            e.preventDefault();
+            actualizarOrdenServidor();
+        });
+    });
+
+    function actualizarOrdenServidor(){
+        const ordenes = [];
+        document.querySelectorAll('#tareas-body tr').forEach((row, idx) => {
+            ordenes.push({id: row.dataset.id, orden: idx + 1});
+            const cell = row.querySelector('.orden-cell');
+            if (cell) cell.textContent = idx + 1;
+        });
+        fetch("{% url 'gestor_tareas:reordenar_tareas' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ordenes})
+        });
+    }
 </script>
 {% endblock %}

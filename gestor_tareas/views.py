@@ -10,6 +10,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.db.models import Q
 
 from .models import Tarea, TipoTrabajo
 
@@ -30,16 +31,44 @@ if GEMINI_API_KEY:
 # --- VISTAS PRINCIPALES DE LA APLICACIÓN ---
 
 def listar_tareas(request):
-    """
-    Muestra la página principal con la lista de todas las tareas activas.
-    Filtra las tareas para mostrar solo aquellas que tienen 'is_visible=True'.
-    """
-    # Usamos select_related('tipo') para optimizar la consulta a la base de datos.
-    tareas_visibles = Tarea.objects.filter(is_visible=True).select_related('tipo').all()
-    
+    """Listado principal de tareas con búsqueda, filtros y orden."""
+    tareas_visibles = Tarea.objects.filter(is_visible=True).select_related('tipo')
+
+    q = request.GET.get('q', '').strip()
+    estado = request.GET.get('estado', '')
+    prioridad = request.GET.get('prioridad', '')
+    tipo = request.GET.get('tipo', '')
+
+    if q:
+        tareas_visibles = tareas_visibles.filter(
+            Q(cliente__icontains=q) |
+            Q(telefono__icontains=q) |
+            Q(descripcion__icontains=q) |
+            Q(tipo__nombre__icontains=q)
+        )
+    if estado:
+        tareas_visibles = tareas_visibles.filter(estado=estado)
+    if prioridad:
+        tareas_visibles = tareas_visibles.filter(prioridad=prioridad)
+    if tipo:
+        tareas_visibles = tareas_visibles.filter(tipo__nombre=tipo)
+
+    prioridades_posibles = (
+        Tarea.objects.values_list('prioridad', flat=True).distinct()
+    )
+    tipos_posibles = TipoTrabajo.objects.values_list('nombre', flat=True)
+
     context = {
         'tareas': tareas_visibles,
         'estados_posibles': Tarea.Estado.choices,
+        'prioridades_posibles': prioridades_posibles,
+        'tipos_posibles': tipos_posibles,
+        'filtros': {
+            'q': q,
+            'estado': estado,
+            'prioridad': prioridad,
+            'tipo': tipo,
+        }
     }
     return render(request, 'gestor_tareas/lista_tareas.html', context)
 
