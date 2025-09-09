@@ -3,7 +3,15 @@
 {% block title %}Lista de Tareas{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-4">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-4 items-start">
+    <aside class="w-64 bg-slate-800 rounded-lg shadow-xl p-4 text-sm">
+        <h2 class="text-center font-bold mb-2">Notas</h2>
+        <form id="noteForm" class="flex gap-2">
+            <input id="noteInput" type="text" class="flex-grow bg-slate-700 p-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Nueva nota...">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-2 rounded">+</button>
+        </form>
+        <ul id="notesList" class="mt-4 space-y-2"></ul>
+    </aside>
     <div class="flex-1">
     <header class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-3xl font-bold text-white text-center sm:text-left">
@@ -36,7 +44,7 @@
                 </thead>
                     <tbody id="tareas-body" class="divide-y divide-slate-700">
                         {% for tarea in tareas %}
-                        <tr id="tarea-row-{{ tarea.id }}" draggable="true" class="hover:bg-slate-700/50 transition-colors duration-200 {% if tarea.estado == 'Recibido' %}bg-blue-900/20{% elif tarea.estado == 'En Proceso' %}bg-yellow-900/20{% elif tarea.estado == 'Completado' %}bg-green-900/20 completed-row{% endif %}">
+                        <tr id="tarea-row-{{ tarea.id }}" draggable="true" class="hover:bg-slate-700/50 transition-colors duration-200 {% if tarea.estado == 'Recibido' %}bg-blue-900/60{% elif tarea.estado == 'En Proceso' %}bg-yellow-900/60{% elif tarea.estado == 'Completado' %}bg-green-900/60 completed-row{% endif %}">
 
                         <td class="px-4 py-3 text-xl font-bold text-white">{{ tarea.orden|default:0 }}</td>
 
@@ -95,14 +103,6 @@
             </div>
         </div>
     </div>
-    <aside class="w-64 bg-slate-800 rounded-lg p-4 text-sm">
-        <h2 class="text-center font-bold mb-2">Notas</h2>
-        <form id="noteForm" class="flex gap-2">
-            <input id="noteInput" type="text" class="flex-grow bg-slate-700 p-1 rounded" placeholder="Nueva nota...">
-            <button type="submit" class="bg-green-600 px-2 rounded">+</button>
-        </form>
-        <ul id="notesList" class="mt-4 space-y-2"></ul>
-    </aside>
 </div>
 {% endblock %}
 
@@ -115,7 +115,7 @@
         const statusBox = document.getElementById('status-message');
 
         statusBox.textContent = 'Actualizando...';
-        statusBox.className = 'mb-4 text-center font-medium text-yellow-400';
+        statusBox.className = 'mb-4 text-center font-medium text-yellow-300';
 
         try {
             const response = await fetch("{% url 'gestor_tareas:actualizar_estado' %}", {
@@ -128,7 +128,7 @@
             if (result.status !== 'success') throw new Error(result.message);
 
             statusBox.textContent = `✅ ${result.message}`;
-            statusBox.className = 'mb-4 text-center font-medium text-green-400';
+            statusBox.className = 'mb-4 text-center font-medium text-green-300';
 
             const row = document.getElementById(`tarea-row-${tareaId}`);
             if (nuevoEstado === 'Completado') {
@@ -139,7 +139,7 @@
 
         } catch (error) {
             statusBox.textContent = `❌ Error: ${error.message}`;
-            statusBox.className = 'mb-4 text-center font-medium text-red-400';
+            statusBox.className = 'mb-4 text-center font-medium text-red-300';
         } finally {
             setTimeout(() => { statusBox.textContent = ''; }, 3000);
         }
@@ -153,7 +153,7 @@
 
         const statusBox = document.getElementById('status-message');
         statusBox.textContent = 'Archivando...';
-        statusBox.className = 'mb-4 text-center font-medium text-yellow-400';
+        statusBox.className = 'mb-4 text-center font-medium text-yellow-300';
         
         try {
             const response = await fetch(`/tareas/ocultar/${tareaId}/`, {
@@ -165,7 +165,7 @@
             if (result.status !== 'success') throw new Error(result.message);
 
             statusBox.textContent = `✅ ${result.message}`;
-            statusBox.className = 'mb-4 text-center font-medium text-green-400';
+            statusBox.className = 'mb-4 text-center font-medium text-green-300';
 
             // Ocultar la fila de la tabla para feedback inmediato con una animación
             const row = document.getElementById(`tarea-row-${tareaId}`);
@@ -177,7 +177,7 @@
 
         } catch (error) {
             statusBox.textContent = `❌ Error: ${error.message}`;
-            statusBox.className = 'mb-4 text-center font-medium text-red-400';
+            statusBox.className = 'mb-4 text-center font-medium text-red-300';
         } finally {
             setTimeout(() => { statusBox.textContent = ''; }, 3000);
         }
@@ -238,7 +238,7 @@
         notesList.innerHTML = '';
         notes.forEach((note, idx) => {
             const li = document.createElement('li');
-            li.className = 'relative bg-slate-700 p-2 rounded';
+            li.className = 'relative bg-slate-700 p-2 rounded hover:bg-slate-600';
             const span = document.createElement('span');
             span.textContent = note;
             span.addEventListener('dblclick', () => {
@@ -251,7 +251,7 @@
             });
             const btn = document.createElement('button');
             btn.textContent = 'x';
-            btn.className = 'absolute top-1 right-1 text-red-400';
+            btn.className = 'absolute top-1 right-1 text-red-300 hover:text-red-200';
             btn.addEventListener('click', () => {
                 notes.splice(idx,1);
                 localStorage.setItem('tareasNotas', JSON.stringify(notes));
