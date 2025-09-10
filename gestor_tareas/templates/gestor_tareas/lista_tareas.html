@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
     <form id="filtersForm" method="get" class="w-full">
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
             <div class="flex flex-col gap-1 w-full sm:w-auto">
@@ -39,7 +40,9 @@
         </div>
     </form>
 
+
     <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
+
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
@@ -102,11 +105,13 @@
                             <a href="{% url 'gestor_tareas:editar_tarea' tarea.id %}" class="text-teal-600 hover:underline mr-3">Editar</a>
                             <button onclick="ocultarTarea({{ tarea.id }})" class="text-red-600 hover:underline">Archivar</button>
                         </td>
+
                         <td class="px-4 py-3 text-gray-400 cursor-move text-center">☰</td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="9" class="text-center py-10 text-gray-500">No hay tareas visibles. ¡Agrega la primera!</td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -224,13 +229,17 @@
 
     const notesDrawer = document.createElement('div');
     notesDrawer.id = 'notesDrawer';
+
     notesDrawer.className = 'fixed top-0 right-0 h-full w-full max-w-xs sm:w-80 bg-white shadow-lg transform translate-x-full transition-transform z-50';
+
     notesDrawer.innerHTML = `
         <div class="p-4 border-b border-[#E5E7EB] flex justify-between items-center">
             <h2 class="font-bold">Notas</h2>
             <button id="closeNotes" class="text-gray-500">✕</button>
         </div>
+
         <div class="p-4 text-sm overflow-y-auto h-full">
+
             <form id="noteForm" class="flex gap-2">
                 <input id="noteInput" type="text" class="flex-grow border border-[#E5E7EB] p-2 rounded focus:outline-none" placeholder="Nueva nota...">
                 <button type="submit" class="bg-teal-600 text-white px-2 rounded">+</button>
@@ -238,7 +247,9 @@
             <ul id="notesList" class="mt-4 space-y-2"></ul>
         </div>`;
     document.body.appendChild(notesDrawer);
+
     document.body.classList.add('overflow-x-hidden');
+
 
     document.getElementById('notesToggle').addEventListener('click', () => {
         notesDrawer.classList.remove('translate-x-full');
@@ -302,10 +313,12 @@
         row.addEventListener('dragstart', e => {
             dragged = row;
             e.dataTransfer.effectAllowed = 'move';
+
             row.classList.add('opacity-50');
         });
         row.addEventListener('dragend', () => {
             row.classList.remove('opacity-50');
+
         });
         row.addEventListener('dragover', e => {
             e.preventDefault();
@@ -321,6 +334,7 @@
                 tbody.insertBefore(dragged, target);
             }
         });
+
         row.addEventListener('dragenter', () => {
             if (row !== dragged) row.classList.add('bg-teal-50');
         });
@@ -330,6 +344,7 @@
         row.addEventListener('drop', e => {
             e.preventDefault();
             row.classList.remove('bg-teal-50');
+
             actualizarOrdenServidor();
         });
     });
