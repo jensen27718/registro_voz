@@ -6,12 +6,18 @@
 {% block title %}Movimientos de {{ cuenta.nombre }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4">
-  <header class="text-center mb-6">
-    <h1 class="text-2xl font-bold text-[#0F172A]">Movimientos de {{ cuenta.nombre }}</h1>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div class="flex flex-col gap-1">
+      <nav class="text-sm text-gray-500">Contabilidad / <span class="text-gray-700">Movimientos</span></nav>
+      <h1 class="text-2xl font-bold text-[#0F172A]">Movimientos de <span class="text-teal-600">{{ cuenta.nombre }}</span></h1>
+    </div>
     <a href="{% url 'interfaz:dashboard' %}" class="text-teal-600 hover:underline">← Volver al dashboard</a>
   </header>
   <div class="bg-white rounded-lg overflow-hidden shadow">
+    <div class="overflow-x-auto">
+
     <table class="w-full text-sm">
       <thead class="text-gray-500">
         <tr>
@@ -43,6 +49,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
   <form id="delete-form" method="post" class="hidden">{% csrf_token %}</form>
 </div>

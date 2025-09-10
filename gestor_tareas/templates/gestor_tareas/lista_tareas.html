@@ -43,10 +43,9 @@
 
     <div id="status-message" class="mb-4 text-center font-medium h-6 transition-opacity duration-300"></div>
 
+
     <div class="bg-white rounded-lg shadow overflow-hidden">
-
-        <div class="overflow-x-auto pr-6">
-
+        <div class="overflow-x-auto">
             <table class="w-full text-sm text-left table-auto">
                 <thead class="text-xs text-gray-500 uppercase bg-gray-50">
                 <tr>
@@ -58,17 +57,13 @@
                     <th class="px-4 py-3">Estado</th>
                     <th class="px-4 py-3">Prioridad</th>
                     <th class="px-4 py-3 text-right">Acciones</th>
-
                     <th class="px-4 py-3">Mover</th>
-
                 </tr>
                 </thead>
                 <tbody id="tareas-body" class="divide-y divide-[#E5E7EB]">
                     {% for tarea in tareas %}
-
                     <tr id="tarea-row-{{ tarea.id }}" class="hover:bg-gray-50 transition-colors" draggable="true" data-id="{{ tarea.id }}">
                         <td class="px-4 py-3 text-lg font-semibold orden-cell">{{ tarea.orden|default:0 }}</td>
-
                         <td class="px-4 py-3">{{ tarea.dias_desde_recibido }}</td>
                         <td class="px-4 py-3">
                             {{ tarea.cliente }}{% if tarea.telefono %} · <a href="https://wa.me/{{ tarea.telefono|cut:' '|cut:'-' }}" target="_blank" class="text-teal-600 hover:underline">{{ tarea.telefono }}</a>{% endif %}
@@ -234,13 +229,17 @@
 
     const notesDrawer = document.createElement('div');
     notesDrawer.id = 'notesDrawer';
-    notesDrawer.className = 'fixed top-0 right-0 w-64 h-full bg-white shadow-lg transform translate-x-full transition-transform';
+
+    notesDrawer.className = 'fixed top-0 right-0 h-full w-full max-w-xs sm:w-80 bg-white shadow-lg transform translate-x-full transition-transform z-50';
+
     notesDrawer.innerHTML = `
         <div class="p-4 border-b border-[#E5E7EB] flex justify-between items-center">
             <h2 class="font-bold">Notas</h2>
             <button id="closeNotes" class="text-gray-500">✕</button>
         </div>
-        <div class="p-4 text-sm">
+
+        <div class="p-4 text-sm overflow-y-auto h-full">
+
             <form id="noteForm" class="flex gap-2">
                 <input id="noteInput" type="text" class="flex-grow border border-[#E5E7EB] p-2 rounded focus:outline-none" placeholder="Nueva nota...">
                 <button type="submit" class="bg-teal-600 text-white px-2 rounded">+</button>
@@ -248,6 +247,9 @@
             <ul id="notesList" class="mt-4 space-y-2"></ul>
         </div>`;
     document.body.appendChild(notesDrawer);
+
+    document.body.classList.add('overflow-x-hidden');
+
 
     document.getElementById('notesToggle').addEventListener('click', () => {
         notesDrawer.classList.remove('translate-x-full');
@@ -311,6 +313,12 @@
         row.addEventListener('dragstart', e => {
             dragged = row;
             e.dataTransfer.effectAllowed = 'move';
+
+            row.classList.add('opacity-50');
+        });
+        row.addEventListener('dragend', () => {
+            row.classList.remove('opacity-50');
+
         });
         row.addEventListener('dragover', e => {
             e.preventDefault();
@@ -326,8 +334,17 @@
                 tbody.insertBefore(dragged, target);
             }
         });
+
+        row.addEventListener('dragenter', () => {
+            if (row !== dragged) row.classList.add('bg-teal-50');
+        });
+        row.addEventListener('dragleave', () => {
+            row.classList.remove('bg-teal-50');
+        });
         row.addEventListener('drop', e => {
             e.preventDefault();
+            row.classList.remove('bg-teal-50');
+
             actualizarOrdenServidor();
         });
     });

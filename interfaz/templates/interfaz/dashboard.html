@@ -4,10 +4,15 @@
 {% block title %}Dashboard Contable{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4">
-  <header class="text-center mb-8">
-    <h1 class="text-3xl font-bold text-[#0F172A]">Resumen de <span class="text-teal-600">Contabilidad</span></h1>
-    <p class="text-2xl mt-2 text-[#0F172A]">Saldo total: <span class="text-green-600">{{ saldo_total_general|moneda }}</span></p>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div class="flex flex-col gap-1">
+      <nav class="text-sm text-gray-500">Dashboard / <span class="text-gray-700">Contabilidad</span></nav>
+      <h1 class="text-3xl font-bold text-[#0F172A]">Resumen de <span class="text-teal-600">Contabilidad</span></h1>
+      <p class="text-2xl mt-2 text-[#0F172A]">Saldo total: <span class="text-green-600">{{ saldo_total_general|moneda }}</span></p>
+    </div>
+
   </header>
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -47,6 +52,9 @@
   </div>
   <h2 class="text-xl font-semibold mb-4 text-[#0F172A]">Últimos 10 registros</h2>
   <div class="bg-white rounded-lg overflow-hidden shadow">
+
+    <div class="overflow-x-auto">
+
     <table class="w-full text-sm">
       <thead class="text-gray-500">
         <tr>
@@ -76,6 +84,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
   <form id="delete-form" method="post" class="hidden">{% csrf_token %}</form>
 </div>
