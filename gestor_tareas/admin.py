@@ -1,6 +1,8 @@
 # gestor_tareas/admin.py
 from django.contrib import admin
+
 from .models import TipoTrabajo, Tarea, DetalleTarea
+
 
 @admin.register(TipoTrabajo)
 class TipoTrabajoAdmin(admin.ModelAdmin):
@@ -21,6 +23,7 @@ class TareaAdmin(admin.ModelAdmin):
     list_editable = ('estado', 'prioridad')
     date_hierarchy = 'fecha_recibido'
     inlines = [DetalleTareaInline]
+
 
 
 @admin.register(DetalleTarea)

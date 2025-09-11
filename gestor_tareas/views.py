@@ -131,11 +131,13 @@ def editar_tarea(request, tarea_id):
         'todos_los_tipos': TipoTrabajo.objects.all(),
         'todas_las_prioridades': Tarea.Prioridad.choices,
         'todos_los_estados': Tarea.Estado.choices,
+
         'detalles': tarea.detalles.select_related('variacion', 'tipo_producto').all(),
         'tipos_producto_catalogo': CatalogoTipoProducto.objects.all(),
         'variaciones_catalogo': VariacionProducto.objects.select_related('producto').all(),
         'tamanos': ValorAtributo.objects.filter(atributo_def__nombre__iexact='Tamaño'),
         'colores': ValorAtributo.objects.filter(atributo_def__nombre__iexact='Color'),
+
     }
     return render(request, 'gestor_tareas/editar_tarea.html', context)
 

@@ -149,14 +149,17 @@ class Tarea(models.Model):
         ordering = ['orden', '-fecha_recibido', 'prioridad']
 
 
+
 class DetalleTarea(models.Model):
     """Detalle de productos dentro de una tarea."""
+
 
     tarea = models.ForeignKey(
         'Tarea',
         related_name='detalles',
         on_delete=models.CASCADE,
     )
+
     tipo_producto = models.ForeignKey(
         CatalogoTipoProducto,
         on_delete=models.SET_NULL,
@@ -171,6 +174,7 @@ class DetalleTarea(models.Model):
         blank=True,
         help_text="Variación del catálogo para referencias existentes.",
     )
+
     referencia = models.CharField(
         max_length=100,
         blank=True,
@@ -182,6 +186,7 @@ class DetalleTarea(models.Model):
         help_text="Texto del sticker para referencias personalizadas.",
     )
     datos_adicionales = models.TextField(blank=True)
+
     tamano = models.ForeignKey(
         ValorAtributo,
         on_delete=models.SET_NULL,
@@ -198,6 +203,7 @@ class DetalleTarea(models.Model):
         related_name='+',
         help_text="Color del producto (ValorAtributo).",
     )
+
     cantidad = models.PositiveIntegerField(default=1)
     precio_unitario = models.DecimalField(
         max_digits=10,
@@ -209,6 +215,7 @@ class DetalleTarea(models.Model):
     completado = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
+
         if self.variacion and not self.referencia:
             self.referencia = self.variacion.producto.referencia
         if self.precio_unitario is None:
@@ -234,6 +241,7 @@ class DetalleTarea(models.Model):
                 vb = qs.first()
                 if vb:
                     self.precio_unitario = vb.precio_base
+
         super().save(*args, **kwargs)
 
     @property
