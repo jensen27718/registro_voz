@@ -1,5 +1,7 @@
 # gestor_tareas/models.py
 
+from decimal import Decimal
+
 from django.db import models
 from django.utils import timezone
 
@@ -109,6 +111,14 @@ class Tarea(models.Model):
         """Cantidad de días transcurridos desde ``fecha_recibido``."""
         return (timezone.now().date() - self.fecha_recibido).days
 
+    @property
+    def costo_total(self):
+        """Suma del costo de todos los detalles asociados."""
+        total = Decimal('0')
+        for det in self.detalles.all():
+            total += det.precio_total
+        return total
+
     def save(self, *args, **kwargs):
         """
         Sobrescribe el método de guardado para añadir lógica personalizada.
@@ -130,3 +140,79 @@ class Tarea(models.Model):
     class Meta:
         # Ordena las tareas por el campo 'orden' y luego por fecha de recibido y prioridad.
         ordering = ['orden', '-fecha_recibido', 'prioridad']
+
+
+class StickerPrice(models.Model):
+    """Precio unitario por tamaño, color y tipo de producto."""
+
+    PRODUCT_CHOICES = [
+        ('GLOBO', 'Stickers para globos'),
+        ('CINTA', 'Stickers para cintas'),
+    ]
+
+    tipo_producto = models.CharField(max_length=10, choices=PRODUCT_CHOICES)
+    tamano = models.CharField(max_length=50)
+    color = models.CharField(max_length=50)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        unique_together = ('tipo_producto', 'tamano', 'color')
+        ordering = ['tipo_producto', 'tamano', 'color']
+
+    def __str__(self):
+        return f"{self.tipo_producto} {self.tamano} {self.color}"
+
+
+class DetalleTarea(models.Model):
+    """Detalle de productos dentro de una tarea."""
+
+    PRODUCT_CHOICES = StickerPrice.PRODUCT_CHOICES + [('LOGO', 'Stickers de logos')]
+
+    tarea = models.ForeignKey(
+        'Tarea',
+        related_name='detalles',
+        on_delete=models.CASCADE,
+    )
+    tipo_producto = models.CharField(max_length=10, choices=PRODUCT_CHOICES)
+    referencia = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Código de referencia para productos existentes.",
+    )
+    descripcion = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Texto del sticker para referencias personalizadas.",
+    )
+    datos_adicionales = models.TextField(blank=True)
+    tamano = models.CharField(max_length=50, blank=True)
+    color = models.CharField(max_length=50, blank=True)
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    imagen_url = models.URLField(blank=True)
+    completado = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.tipo_producto in ['GLOBO', 'CINTA'] and self.precio_unitario is None:
+            precio_obj = StickerPrice.objects.filter(
+                tipo_producto=self.tipo_producto,
+                tamano=self.tamano,
+                color=self.color,
+            ).first()
+            if precio_obj:
+                self.precio_unitario = precio_obj.precio
+        super().save(*args, **kwargs)
+
+    @property
+    def precio_total(self):
+        if self.precio_unitario is None:
+            return Decimal('0')
+        return self.precio_unitario * self.cantidad
+
+    def __str__(self):
+        return self.referencia or self.descripcion or f"Detalle {self.id}"

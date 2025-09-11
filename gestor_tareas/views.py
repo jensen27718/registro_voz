@@ -108,7 +108,14 @@ def editar_tarea(request, tarea_id):
         tarea.tipo = TipoTrabajo.objects.filter(nombre=tipo_nombre).first()
         
         tarea.save()  # Guarda los cambios en la base de datos
-        return redirect('gestor_tareas:lista_tareas') # Redirige a la lista
+
+        # Actualiza el estado de los detalles (checklist)
+        for detalle in tarea.detalles.all():
+            key = f"detalle-{detalle.id}-completado"
+            detalle.completado = key in request.POST
+            detalle.save(update_fields=['completado'])
+
+        return redirect('gestor_tareas:lista_tareas')  # Redirige a la lista
 
     # Si es una petición GET, muestra el formulario de edición
     context = {
@@ -116,6 +123,7 @@ def editar_tarea(request, tarea_id):
         'todos_los_tipos': TipoTrabajo.objects.all(),
         'todas_las_prioridades': Tarea.Prioridad.choices,
         'todos_los_estados': Tarea.Estado.choices,
+        'detalles': tarea.detalles.all(),
     }
     return render(request, 'gestor_tareas/editar_tarea.html', context)
 
