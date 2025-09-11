@@ -5,6 +5,13 @@ from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 
+from catalogo.models import (
+    TipoProducto as CatalogoTipoProducto,
+    VariacionProducto,
+    VariacionBase,
+    ValorAtributo,
+)
+
 class TipoTrabajo(models.Model):
     """
     Define las categorías de trabajo que se pueden realizar,
@@ -142,38 +149,32 @@ class Tarea(models.Model):
         ordering = ['orden', '-fecha_recibido', 'prioridad']
 
 
-class StickerPrice(models.Model):
-    """Precio unitario por tamaño, color y tipo de producto."""
-
-    PRODUCT_CHOICES = [
-        ('GLOBO', 'Stickers para globos'),
-        ('CINTA', 'Stickers para cintas'),
-    ]
-
-    tipo_producto = models.CharField(max_length=10, choices=PRODUCT_CHOICES)
-    tamano = models.CharField(max_length=50)
-    color = models.CharField(max_length=50)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-
-    class Meta:
-        unique_together = ('tipo_producto', 'tamano', 'color')
-        ordering = ['tipo_producto', 'tamano', 'color']
-
-    def __str__(self):
-        return f"{self.tipo_producto} {self.tamano} {self.color}"
-
 
 class DetalleTarea(models.Model):
     """Detalle de productos dentro de una tarea."""
 
-    PRODUCT_CHOICES = StickerPrice.PRODUCT_CHOICES + [('LOGO', 'Stickers de logos')]
 
     tarea = models.ForeignKey(
         'Tarea',
         related_name='detalles',
         on_delete=models.CASCADE,
     )
-    tipo_producto = models.CharField(max_length=10, choices=PRODUCT_CHOICES)
+
+    tipo_producto = models.ForeignKey(
+        CatalogoTipoProducto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Tipo de producto según el catálogo.",
+    )
+    variacion = models.ForeignKey(
+        VariacionProducto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Variación del catálogo para referencias existentes.",
+    )
+
     referencia = models.CharField(
         max_length=100,
         blank=True,
@@ -185,8 +186,24 @@ class DetalleTarea(models.Model):
         help_text="Texto del sticker para referencias personalizadas.",
     )
     datos_adicionales = models.TextField(blank=True)
-    tamano = models.CharField(max_length=50, blank=True)
-    color = models.CharField(max_length=50, blank=True)
+
+    tamano = models.ForeignKey(
+        ValorAtributo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text="Tamaño del producto (ValorAtributo).",
+    )
+    color = models.ForeignKey(
+        ValorAtributo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text="Color del producto (ValorAtributo).",
+    )
+
     cantidad = models.PositiveIntegerField(default=1)
     precio_unitario = models.DecimalField(
         max_digits=10,
@@ -198,14 +215,33 @@ class DetalleTarea(models.Model):
     completado = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        if self.tipo_producto in ['GLOBO', 'CINTA'] and self.precio_unitario is None:
-            precio_obj = StickerPrice.objects.filter(
-                tipo_producto=self.tipo_producto,
-                tamano=self.tamano,
-                color=self.color,
-            ).first()
-            if precio_obj:
-                self.precio_unitario = precio_obj.precio
+
+        if self.variacion and not self.referencia:
+            self.referencia = self.variacion.producto.referencia
+        if self.precio_unitario is None:
+            if self.variacion:
+                self.precio_unitario = self.variacion.precio_base
+                if not self.tipo_producto:
+                    cat = self.variacion.producto.categorias.first()
+                    if cat:
+                        self.tipo_producto = cat.tipo_producto
+                if not self.tamano or not self.color:
+                    for val in self.variacion.valores.all():
+                        nombre = val.atributo_def.nombre.lower()
+                        if 'tam' in nombre and not self.tamano:
+                            self.tamano = val
+                        if 'color' in nombre and not self.color:
+                            self.color = val
+            elif self.tipo_producto:
+                qs = VariacionBase.objects.filter(tipo_producto=self.tipo_producto)
+                if self.tamano:
+                    qs = qs.filter(valores=self.tamano)
+                if self.color:
+                    qs = qs.filter(valores=self.color)
+                vb = qs.first()
+                if vb:
+                    self.precio_unitario = vb.precio_base
+
         super().save(*args, **kwargs)
 
     @property

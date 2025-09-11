@@ -1,6 +1,8 @@
 # gestor_tareas/admin.py
 from django.contrib import admin
-from .models import TipoTrabajo, Tarea, DetalleTarea, StickerPrice
+
+from .models import TipoTrabajo, Tarea, DetalleTarea
+
 
 @admin.register(TipoTrabajo)
 class TipoTrabajoAdmin(admin.ModelAdmin):
@@ -22,12 +24,6 @@ class TareaAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha_recibido'
     inlines = [DetalleTareaInline]
 
-
-@admin.register(StickerPrice)
-class StickerPriceAdmin(admin.ModelAdmin):
-    list_display = ('tipo_producto', 'tamano', 'color', 'precio')
-    list_filter = ('tipo_producto', 'tamano', 'color')
-    search_fields = ('tamano', 'color')
 
 
 @admin.register(DetalleTarea)
