@@ -2,17 +2,25 @@
 
 import os
 import json
+import tempfile
 import google.generativeai as genai
 from datetime import datetime
 from difflib import get_close_matches
 
+import cloudinary.uploader
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db.models import Q
 
-from .models import Tarea, TipoTrabajo
+from .models import Tarea, TipoTrabajo, DetalleTarea
+from catalogo.models import (
+    TipoProducto as CatalogoTipoProducto,
+    VariacionProducto,
+    ValorAtributo,
+)
+from .ocr.gemini_ocr_processor import GeminiOCRProcessor
 
 # --- CONFIGURACIÓN DE IA ---
 # Intenta cargar la clave API desde un archivo 'secrets.py' (para producción)
@@ -108,7 +116,14 @@ def editar_tarea(request, tarea_id):
         tarea.tipo = TipoTrabajo.objects.filter(nombre=tipo_nombre).first()
         
         tarea.save()  # Guarda los cambios en la base de datos
-        return redirect('gestor_tareas:lista_tareas') # Redirige a la lista
+
+        # Actualiza el estado de los detalles (checklist)
+        for detalle in tarea.detalles.all():
+            key = f"detalle-{detalle.id}-completado"
+            detalle.completado = key in request.POST
+            detalle.save(update_fields=['completado'])
+
+        return redirect('gestor_tareas:lista_tareas')  # Redirige a la lista
 
     # Si es una petición GET, muestra el formulario de edición
     context = {
@@ -116,8 +131,113 @@ def editar_tarea(request, tarea_id):
         'todos_los_tipos': TipoTrabajo.objects.all(),
         'todas_las_prioridades': Tarea.Prioridad.choices,
         'todos_los_estados': Tarea.Estado.choices,
+        'detalles': tarea.detalles.select_related('variacion', 'tipo_producto').all(),
+        'tipos_producto_catalogo': CatalogoTipoProducto.objects.all(),
+        'variaciones_catalogo': VariacionProducto.objects.select_related('producto').all(),
+        'tamanos': ValorAtributo.objects.filter(atributo_def__nombre__iexact='Tamaño'),
+        'colores': ValorAtributo.objects.filter(atributo_def__nombre__iexact='Color'),
     }
     return render(request, 'gestor_tareas/editar_tarea.html', context)
+
+
+@csrf_exempt
+def agregar_detalle(request, tarea_id):
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+    if request.method == 'POST':
+        tipo_id = request.POST.get('tipo_producto')
+        variacion_id = request.POST.get('variacion') or None
+        descripcion = request.POST.get('descripcion', '')
+        datos = request.POST.get('datos_adicionales', '')
+        cantidad = int(request.POST.get('cantidad', '1') or '1')
+        tamano_id = request.POST.get('tamano') or None
+        color_id = request.POST.get('color') or None
+
+        imagen_url = ''
+        if request.FILES.get('imagen'):
+            try:
+                result = cloudinary.uploader.upload(request.FILES['imagen'])
+                imagen_url = result.get('secure_url') or result.get('url')
+            except Exception:
+                imagen_url = ''
+
+        tipo_producto = CatalogoTipoProducto.objects.filter(id=tipo_id).first()
+        variacion = VariacionProducto.objects.filter(id=variacion_id).first() if variacion_id else None
+        tamano = ValorAtributo.objects.filter(id=tamano_id).first() if tamano_id else None
+        color = ValorAtributo.objects.filter(id=color_id).first() if color_id else None
+
+        DetalleTarea.objects.create(
+            tarea=tarea,
+            tipo_producto=tipo_producto,
+            variacion=variacion,
+            descripcion=descripcion,
+            datos_adicionales=datos,
+            cantidad=cantidad,
+            tamano=tamano,
+            color=color,
+            imagen_url=imagen_url,
+        )
+
+    return redirect('gestor_tareas:editar_tarea', tarea_id=tarea.id)
+
+
+class _SimpleConfig:
+    def get_colors(self):
+        return list(
+            ValorAtributo.objects.filter(atributo_def__nombre__iexact='Color')
+            .values_list('valor', flat=True)
+        )
+
+
+@csrf_exempt
+def ocr_detalles(request, tarea_id):
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+    if request.method == 'POST' and request.FILES.get('imagen'):
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+                for chunk in request.FILES['imagen'].chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            processor = GeminiOCRProcessor(GEMINI_API_KEY, _SimpleConfig())
+            registros, error = processor.process_image_to_extract_data(tmp_path)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+        if error:
+            return JsonResponse({'error': error}, status=400)
+        for item in registros:
+            ref = item.get('ref')
+            qty = int(item.get('qty', 1))
+            tam_nombre = item.get('tamaño')
+            color_nombre = item.get('color')
+            tam = ValorAtributo.objects.filter(valor__iexact=tam_nombre).first()
+            color = ValorAtributo.objects.filter(valor__iexact=color_nombre).first()
+            variacion = None
+            tipo_producto = None
+            if ref:
+                variacion = (
+                    VariacionProducto.objects.filter(
+                        producto__referencia__iexact=ref,
+                        valores=tam,
+                    )
+                    .filter(valores=color)
+                    .first()
+                )
+                if variacion:
+                    cat = variacion.producto.categorias.first()
+                    if cat:
+                        tipo_producto = cat.tipo_producto
+            DetalleTarea.objects.create(
+                tarea=tarea,
+                tipo_producto=tipo_producto,
+                variacion=variacion,
+                referencia=ref,
+                cantidad=qty,
+                tamano=tam,
+                color=color,
+            )
+        return redirect('gestor_tareas:editar_tarea', tarea_id=tarea.id)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
 # --- VISTAS DE API / BACKEND (Manejan peticiones AJAX) ---

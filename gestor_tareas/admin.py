@@ -1,11 +1,17 @@
 # gestor_tareas/admin.py
 from django.contrib import admin
-from .models import TipoTrabajo, Tarea
+from .models import TipoTrabajo, Tarea, DetalleTarea
 
 @admin.register(TipoTrabajo)
 class TipoTrabajoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
     search_fields = ('nombre',)
+
+
+class DetalleTareaInline(admin.TabularInline):
+    model = DetalleTarea
+    extra = 0
+
 
 @admin.register(Tarea)
 class TareaAdmin(admin.ModelAdmin):
@@ -14,3 +20,11 @@ class TareaAdmin(admin.ModelAdmin):
     search_fields = ('cliente', 'numero', 'id')
     list_editable = ('estado', 'prioridad')
     date_hierarchy = 'fecha_recibido'
+    inlines = [DetalleTareaInline]
+
+
+@admin.register(DetalleTarea)
+class DetalleTareaAdmin(admin.ModelAdmin):
+    list_display = ('tarea', 'tipo_producto', 'referencia', 'descripcion', 'cantidad', 'completado')
+    list_filter = ('tipo_producto', 'completado')
+    search_fields = ('referencia', 'descripcion')

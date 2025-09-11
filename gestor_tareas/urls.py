@@ -15,5 +15,7 @@ urlpatterns = [
 
     # <-- NUEVAS RUTAS -->
     path('editar/<int:tarea_id>/', views.editar_tarea, name='editar_tarea'),
+    path('editar/<int:tarea_id>/agregar-detalle/', views.agregar_detalle, name='agregar_detalle'),
+    path('editar/<int:tarea_id>/ocr-detalles/', views.ocr_detalles, name='ocr_detalles'),
     path('ocultar/<int:tarea_id>/', views.ocultar_tarea, name='ocultar_tarea'),
 ]

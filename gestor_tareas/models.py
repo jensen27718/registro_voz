@@ -1,7 +1,16 @@
 # gestor_tareas/models.py
 
+from decimal import Decimal
+
 from django.db import models
 from django.utils import timezone
+
+from catalogo.models import (
+    TipoProducto as CatalogoTipoProducto,
+    VariacionProducto,
+    VariacionBase,
+    ValorAtributo,
+)
 
 class TipoTrabajo(models.Model):
     """
@@ -109,6 +118,14 @@ class Tarea(models.Model):
         """Cantidad de días transcurridos desde ``fecha_recibido``."""
         return (timezone.now().date() - self.fecha_recibido).days
 
+    @property
+    def costo_total(self):
+        """Suma del costo de todos los detalles asociados."""
+        total = Decimal('0')
+        for det in self.detalles.all():
+            total += det.precio_total
+        return total
+
     def save(self, *args, **kwargs):
         """
         Sobrescribe el método de guardado para añadir lógica personalizada.
@@ -130,3 +147,100 @@ class Tarea(models.Model):
     class Meta:
         # Ordena las tareas por el campo 'orden' y luego por fecha de recibido y prioridad.
         ordering = ['orden', '-fecha_recibido', 'prioridad']
+
+
+class DetalleTarea(models.Model):
+    """Detalle de productos dentro de una tarea."""
+
+    tarea = models.ForeignKey(
+        'Tarea',
+        related_name='detalles',
+        on_delete=models.CASCADE,
+    )
+    tipo_producto = models.ForeignKey(
+        CatalogoTipoProducto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Tipo de producto según el catálogo.",
+    )
+    variacion = models.ForeignKey(
+        VariacionProducto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Variación del catálogo para referencias existentes.",
+    )
+    referencia = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Código de referencia para productos existentes.",
+    )
+    descripcion = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Texto del sticker para referencias personalizadas.",
+    )
+    datos_adicionales = models.TextField(blank=True)
+    tamano = models.ForeignKey(
+        ValorAtributo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text="Tamaño del producto (ValorAtributo).",
+    )
+    color = models.ForeignKey(
+        ValorAtributo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text="Color del producto (ValorAtributo).",
+    )
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    imagen_url = models.URLField(blank=True)
+    completado = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.variacion and not self.referencia:
+            self.referencia = self.variacion.producto.referencia
+        if self.precio_unitario is None:
+            if self.variacion:
+                self.precio_unitario = self.variacion.precio_base
+                if not self.tipo_producto:
+                    cat = self.variacion.producto.categorias.first()
+                    if cat:
+                        self.tipo_producto = cat.tipo_producto
+                if not self.tamano or not self.color:
+                    for val in self.variacion.valores.all():
+                        nombre = val.atributo_def.nombre.lower()
+                        if 'tam' in nombre and not self.tamano:
+                            self.tamano = val
+                        if 'color' in nombre and not self.color:
+                            self.color = val
+            elif self.tipo_producto:
+                qs = VariacionBase.objects.filter(tipo_producto=self.tipo_producto)
+                if self.tamano:
+                    qs = qs.filter(valores=self.tamano)
+                if self.color:
+                    qs = qs.filter(valores=self.color)
+                vb = qs.first()
+                if vb:
+                    self.precio_unitario = vb.precio_base
+        super().save(*args, **kwargs)
+
+    @property
+    def precio_total(self):
+        if self.precio_unitario is None:
+            return Decimal('0')
+        return self.precio_unitario * self.cantidad
+
+    def __str__(self):
+        return self.referencia or self.descripcion or f"Detalle {self.id}"
